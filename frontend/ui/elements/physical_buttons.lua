@@ -60,6 +60,20 @@ if Device:hasDPad() and Device:useDPadAsActionKeys() then
             G_reader_settings:flipNilOrFalse("left_right_keys_turn_pages")
             UIManager:askForRestart()
         end,
+        separator = true,
+    })
+end
+
+if Device:hasScreenKB() or Device:hasSymKey() then
+    table.insert(PhysicalButtons.sub_item_table, {
+        text = _("Refresh screen with press key"),
+        checked_func = function()
+            return G_reader_settings:isTrue("press_key_does_fullrefresh")
+        end,
+        callback = function()
+            G_reader_settings:flipNilOrFalse("press_key_does_fullrefresh")
+            UIManager:askForRestart()
+        end,
     })
 end
 
