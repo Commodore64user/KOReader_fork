@@ -54,6 +54,16 @@ function ReaderMenu:init()
             icon = "appbar.menu",
         }
     }
+    if Device:hasScreenKB() and G_reader_settings:isTrue("press_key_does_fullrefresh") then
+        self.menu_items.bottom_menu = {
+            icon = "appbar.textsize",
+            remember = false,
+            callback = function()
+                self:onTapCloseMenu()
+                self.ui.config:onShowConfigMenu()
+            end,
+        }
+    end
 
     self.registered_widgets = {}
 
