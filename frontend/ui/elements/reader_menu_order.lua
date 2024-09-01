@@ -7,6 +7,7 @@ local order = {
         "setting",
         "tools",
         "search",
+        "bottom_menu", -- if Device:hasScreenKB()
         "filemanager",
         "main",
     },
@@ -223,6 +224,7 @@ local order = {
         "----------------------------",
         "fulltext_search_settings",
     },
+    bottom_menu = {},
     filemanager = {},
     main = {
         "history",
