@@ -35,7 +35,11 @@ function ReaderConfig:onGesture() end
 
 function ReaderConfig:registerKeyEvents()
     if Device:hasKeys() then
-        self.key_events.ShowConfigMenu = { { { "Press", "AA" } } }
+        if Device:hasSymKey() and G_reader_settings:isTrue("press_key_does_fullrefresh") then
+            self.key_events.ShowConfigMenu = { { "AA" } }
+        elseif G_reader_settings:nilOrFalse("press_key_does_fullrefresh") then
+            self.key_events.ShowConfigMenu = { { { "Press", "AA" } } }
+        end
     end
 end
 
