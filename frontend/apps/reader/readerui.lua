@@ -536,6 +536,9 @@ function ReaderUI:registerKeyEvents()
                 self.key_events.KeyToggleWifi = { { "ScreenKB", "Home" }, event = "ToggleWifi" }
                 self.key_events.OpenLastDoc = { { "ScreenKB", "Back" } }
             end
+            if G_reader_settings:isTrue("press_key_does_fullrefresh") then
+                self.key_events.KeyFullRefresh = { { "Press" }, event = "FullRefresh" }
+            end
         end
     end
 end
