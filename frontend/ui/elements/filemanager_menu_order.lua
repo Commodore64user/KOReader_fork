@@ -71,6 +71,7 @@ local order = {
         "backspace_as_back",
         "----------------------------",
         "physical_buttons_setup",
+        "shortcuts",
         "----------------------------",
         "android_volume_keys",
         "android_haptic_feedback",
