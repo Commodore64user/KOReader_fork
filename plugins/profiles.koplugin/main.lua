@@ -392,6 +392,9 @@ function Profiles:updateProfiles(action_old_name, action_new_name)
     if self.ui.gestures then -- search and update the profile action in assigned gestures
         self.ui.gestures:updateProfiles(action_old_name, action_new_name)
     end
+    if self.ui.shortcuts then -- search and update the profile action in assigned keyboard shortcuts
+        self.ui.shortcuts:updateProfiles(action_old_name, action_new_name)
+    end
 end
 
 function Profiles:updateAutostart(old_name, new_name)
