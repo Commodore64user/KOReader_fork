@@ -34,17 +34,17 @@ local Shortcuts = InputContainer:extend{
 local shortcuts_path = FFIUtil.joinPath(DataStorage:getSettingsDir(), "shortcuts.lua")
 
 local shortcut_list = {
-    modifier_plus_up                 = Device:hasScreenKB() and _("ScreenKB + Up") or _("Shift + Up"),
-    modifier_plus_down               = Device:hasScreenKB() and _("ScreenKB + Down") or _("Shift + Down"),
-    modifier_plus_left               = Device:hasScreenKB() and _("ScreenKB + Left") or _("Shift + Left"),
-    modifier_plus_right              = Device:hasScreenKB() and _("ScreenKB + Right") or _("Shift + Right"),
-    modifier_plus_left_page_forward  = Device:hasScreenKB() and _("ScreenKB + LPgFwd") or _("Shift + LPgFwd"),
+    modifier_plus_up                 = Device:hasScreenKB() and _("ScreenKB + Up")      or _("Shift + Up"),
+    modifier_plus_down               = Device:hasScreenKB() and _("ScreenKB + Down")    or _("Shift + Down"),
+    modifier_plus_left               = Device:hasScreenKB() and _("ScreenKB + Left")    or _("Shift + Left"),
+    modifier_plus_right              = Device:hasScreenKB() and _("ScreenKB + Right")   or _("Shift + Right"),
+    modifier_plus_left_page_forward  = Device:hasScreenKB() and _("ScreenKB + LPgFwd")  or _("Shift + LPgFwd"),
     modifier_plus_left_page_back     = Device:hasScreenKB() and _("ScreenKB + LPgBack") or _("Shift + LPgBack"),
-    modifier_plus_right_page_forward = Device:hasScreenKB() and _("ScreenKB + RPgFwd") or _("Shift + RPgFwd"),
+    modifier_plus_right_page_forward = Device:hasScreenKB() and _("ScreenKB + RPgFwd")  or _("Shift + RPgFwd"),
     modifier_plus_right_page_back    = Device:hasScreenKB() and _("ScreenKB + RPgBack") or _("Shift + RPgBack"),
-    modifier_plus_back               = Device:hasScreenKB() and _("ScreenKB + Back") or _("Shift + Back"),
-    modifier_plus_home               = Device:hasScreenKB() and _("ScreenKB + Home") or _("Shift + Home"),
-    modifier_plus_press              = Device:hasScreenKB() and _("ScreenKB + Press") or _("Shift + Press"),
+    modifier_plus_back               = Device:hasScreenKB() and _("ScreenKB + Back")    or _("Shift + Back"),
+    modifier_plus_home               = Device:hasScreenKB() and _("ScreenKB + Home")    or _("Shift + Home"),
+    modifier_plus_press              = Device:hasScreenKB() and _("ScreenKB + Press")   or _("Shift + Press"),
 }
 if Device:hasKeyboard() then
     table.insert(shortcut_list, {
@@ -158,7 +158,14 @@ function Shortcuts:genMenu(key)
 end
 
 function Shortcuts:genSubItem(key, separator, hold_callback)
-    local reader_only = {modifier_plus_left_page_forward=true, modifier_plus_left_page_back=true, modifier_plus_right_page_forward=true, modifier_plus_right_page_back=true, modifier_plus_press=true,}
+    local reader_only = {
+        -- these button combinations are used by FM already, don't allow users to customise them.
+        modifier_plus_left_page_forward = true,
+        modifier_plus_left_page_back = true,
+        modifier_plus_right_page_forward = true,
+        modifier_plus_right_page_back = true,
+        modifier_plus_press = true,
+    }
     local enabled_func
     if reader_only[key] then
        enabled_func = function() return self.key_mode == "shortcuts_reader" end
@@ -188,22 +195,59 @@ function Shortcuts:addToMainMenu(menu_items)
         sub_item_table = {
             {
                 text = _("Cursor keys"),
-                sub_item_table_ck = self:genSubItemTable({"modifier_plus_up", "modifier_plus_down", "modifier_plus_left", "modifier_plus_right"}),
+                sub_item_table = self:genSubItemTable({
+                    "modifier_plus_up",
+                    "modifier_plus_down",
+                    "modifier_plus_left",
+                    "modifier_plus_right"
+                }),
             },
             {
-                text = _("Page-turn shortcuts"),
-                sub_item_table_pg = self:genSubItemTable({"modifier_plus_left_page_forward", "modifier_plus_left_page_back", "modifier_plus_right_page_forward", "modifier_plus_right_page_back"}),
+                text = _("Page-turn buttons"),
+                enabled_func = function() return self.key_mode == "shortcuts_reader" end,
+                sub_item_table = self:genSubItemTable({
+                    "modifier_plus_left_page_forward",
+                    "modifier_plus_left_page_back",
+                    "modifier_plus_right_page_forward",
+                    "modifier_plus_right_page_back"
+                }),
             },
             {
                 text = _("Function keys"),
-                sub_item_table_fn = self:genSubItemTable({"modifier_plus_back", "modifier_plus_home", "modifier_plus_press"}),
+                sub_item_table = self:genSubItemTable({
+                    "modifier_plus_back",
+                    "modifier_plus_home",
+                    "modifier_plus_press"
+                }),
             },
         },
     }
     if Device:hasKeyboard() then
         table.insert(menu_items.shortcuts.sub_item_table, {
-            text = _("Alt"),
-            sub_item_table = self:genSubItemTable({"alt_plus_up", "alt_plus_down", "alt_plus_left", "alt_plus_right"}),
+            text = _("Alt-cursor keys"),
+            sub_item_table = self:genSubItemTable({
+                "alt_plus_up",
+                "alt_plus_down",
+                "alt_plus_left",
+                "alt_plus_right"
+            }),
+        })
+        table.insert(menu_items.shortcuts.sub_item_table, {
+            text = _("Alt-page-turn buttons"),
+            sub_item_table = self:genSubItemTable({
+                "alt_plus_left_page_forward",
+                "alt_plus_left_page_back",
+                "alt_plus_right_page_back",
+                "alt_plus_right_page_back"
+            }),
+        })
+        table.insert(menu_items.shortcuts.sub_item_table, {
+            text = _("Alt-function keys"),
+            sub_item_table = self:genSubItemTable({
+                "alt_plus_back",
+                "alt_plus_home",
+                "alt_plus_press"
+            }),
         })
     end
 end
