@@ -1,24 +1,14 @@
-local BD = require("ui/bidi")
-local ConfirmBox = require("ui/widget/confirmbox")
 local DataStorage = require("datastorage")
 local Device = require("device")
 local Dispatcher = require("dispatcher")
 local Event = require("ui/event")
 local FFIUtil = require("ffi/util")
-local InfoMessage = require("ui/widget/infomessage")
 local InputContainer = require("ui/widget/container/inputcontainer")
-local InputDialog = require("ui/widget/inputdialog")
 local LuaSettings = require("luasettings")
-local Screen = require("device").screen
-local SpinWidget = require("ui/widget/spinwidget")
-local UIManager = require("ui/uimanager")
 local lfs = require("libs/libkoreader-lfs")
-local logger = require("logger")
 local util = require("util")
 local T = FFIUtil.template
-local time = require("ui/time")
 local _ = require("gettext")
-local C_ = _.pgettext
 
 if not (Device:hasScreenKB() or Device:hasSymKey()) then
     return { disabled = true, }
@@ -27,12 +17,13 @@ end
 local HotKeyShortcuts = InputContainer:extend{
     name = "hotkeyshortcuts",
     settings_data = nil,
-    hotkeyshortcuts = require("device/kindle/event_map_kindle4"),
+    hotkeyshortcuts = nil,--require("device/kindle/event_map_kindle4"),
     defaults = nil,
     updated = false,
 }
 local hotkeyshortcuts_path = FFIUtil.joinPath(DataStorage:getSettingsDir(), "hotkeyshortcuts.lua")
 
+-- mofifier *here* refers to either screenkb or shift
 local hotkeyshortcuts_list = {
     modifier_plus_up                 = Device:hasScreenKB() and _("ScreenKB + Up")      or _("Shift + Up"),
     modifier_plus_down               = Device:hasScreenKB() and _("ScreenKB + Down")    or _("Shift + Down"),
@@ -45,12 +36,11 @@ local hotkeyshortcuts_list = {
     modifier_plus_back               = Device:hasScreenKB() and _("ScreenKB + Back")    or _("Shift + Back"),
     modifier_plus_home               = Device:hasScreenKB() and _("ScreenKB + Home")    or _("Shift + Home"),
     modifier_plus_press              = Device:hasScreenKB() and _("ScreenKB + Press")   or _("Shift + Press"),
-    -- mod+Menu is already used globally for screenshots (on k4), don't add it here.
+    -- modifier_plus_menu (screenkb+menu) is already used globally for screenshots (on k4), don't add it here.
 }
 if Device:hasKeyboard() then
     table.insert(hotkeyshortcuts_list, {
-        modifier_plus_menu          = _("Shift + Menu"),
-        -- alt
+        modifier_plus_menu          = _("Alt + Up"),
         alt_plus_up                 = _("Alt + Up"),
         alt_plus_down               = _("Alt + Down"),
         alt_plus_left               = _("Alt + Left"),
@@ -62,7 +52,7 @@ if Device:hasKeyboard() then
         alt_plus_back               = _("Alt + Back"),
         alt_plus_home               = _("Alt + Home"),
         alt_plus_press              = _("Alt + Press"),
-        alt_plus_menu               = _("Alt + Menu")
+        alt_plus_menu               = _("Alt + Menu"),
     })
 end
 
@@ -72,61 +62,96 @@ function HotKeyShortcuts:init()
         FFIUtil.copyFile(defaults_path, hotkeyshortcuts_path)
     end
     self.is_docless = self.ui == nil or self.ui.document == nil
-    self.key_mode = self.is_docless and "hotkeyshortcuts_fm" or "hotkeyshortcuts_reader"
-    self.defaults = LuaSettings:open(defaults_path).data[self.key_mode]
+    self.hotkey_mode = self.is_docless and "hotkeyshortcuts_fm" or "hotkeyshortcuts_reader"
+    self.defaults = LuaSettings:open(defaults_path).data[self.hotkey_mode]
     if not self.settings_data then
         self.settings_data = LuaSettings:open(hotkeyshortcuts_path)
     end
-    self.hotkeyshortcuts = self.settings_data.data[self.key_mode]
+    self.hotkeyshortcuts = self.settings_data.data[self.hotkey_mode]
 
     self.ui.menu:registerToMainMenu(self)
     Dispatcher:init()
     self:registerKeyEvents()
 end
 
-function HotKeyShortcuts:hotkeyshortcutsAction(action, key, mod)
+--[[
+function HotKeyShortcuts:hotkeyshortcutsAction(action, hotkey, mod)
     local action_list = self.hotkeyshortcuts[action]
     if action_list == nil then
         return
     else
         -- self.ui:handleEvent(Event:new("HandledAsSwipe"))
-        local exec_props = { hotkeyshortcuts = key.modifiers[mod] }
+        local exec_props = { hotkeyshortcuts = hotkey.modifiers[mod] }
         Dispatcher:execute(action_list, exec_props)
     end
     return true
-end
+end ]]
 
 function HotKeyShortcuts:registerKeyEvents()
     if Device:hasScreenKB() then
-        self.key_events.ModPlusUp = { { "ScreenKB", "Up" } }
-        self.key_events.ModPlusDown = { { "ScreenKB", "Down" } }
-        self.key_events.ModPlusLeft = { { "ScreenKB", "Left" } }
-        self.key_events.ModPlusRight = { { "ScreenKB", "Right" } }
+        self.key_events.HotKey = { { "ScreenKB", "Up" }, event = self.hotkeyshortcuts[hotkey] }
+        self.key_events.HotKey = { { "ScreenKB", "Down" }, event = self.hotkeyshortcuts[hotkey] }
+        self.key_events.HotKey = { { "ScreenKB", "Left" }, event = self.hotkeyshortcuts[hotkey] }
+        self.key_events.HotKey = { { "ScreenKB", "Right" }, event = self.hotkeyshortcuts[hotkey] }
+        if self.hotkey_mode == "hotkeyshortcuts_reader" then
+            self.key_events.HotKey = { { "ScreenKB", "LPgFwd" }, event = self.hotkeyshortcuts[hotkey] }
+            self.key_events.HotKey = { { "ScreenKB", "LPgBack" }, event = self.hotkeyshortcuts[hotkey] }
+            self.key_events.HotKey = { { "ScreenKB", "RPgFwd" }, event = self.hotkeyshortcuts[hotkey] }
+            self.key_events.HotKey = { { "ScreenKB", "RPgBack" }, event = self.hotkeyshortcuts[hotkey] }
+            self.key_events.HotKey = { { "ScreenKB", "Press" }, event = self.hotkeyshortcuts[hotkey] }
+        end
+        self.key_events.HotKey = { { "ScreenKB", "Back" }, event = self.hotkeyshortcuts[hotkey] }
+        self.key_events.HotKey = { { "ScreenKB", "Home" }, event = self.hotkeyshortcuts[hotkey] }
+        -- no event for screenkb+menu
     else
-        self.key_events.ModPlusUp = { { "Shift", "Up" } }
-        self.key_events.ModPlusDown = { { "Shift", "Down" } }
-        self.key_events.ModPlusLeft = { { "Shift", "Left" } }
-        self.key_events.ModPlusRight = { { "Shift", "Right" } }
+        self.key_events.HotKey = { { "Shift", "Up" }, event = self.hotkeyshortcuts[hotkey] }
+        self.key_events.HotKey = { { "Shift", "Down" }, event = self.hotkeyshortcuts[hotkey] }
+        self.key_events.HotKey = { { "Shift", "Left" }, event = self.hotkeyshortcuts[hotkey] }
+        self.key_events.HotKey = { { "Shift", "Right" }, event = self.hotkeyshortcuts[hotkey] }
+        if self.hotkey_mode == "hotkeyshortcuts_reader" then
+            self.key_events.HotKey = { { "Shift", "LPgFwd" }, event = self.hotkeyshortcuts[hotkey] }
+            self.key_events.HotKey = { { "Shift", "LPgBack" }, event = self.hotkeyshortcuts[hotkey] }
+            self.key_events.HotKey = { { "Shift", "RPgFwd" }, event = self.hotkeyshortcuts[hotkey] }
+            self.key_events.HotKey = { { "Shift", "RPgBack" }, event = self.hotkeyshortcuts[hotkey] }
+            self.key_events.HotKey = { { "Shift", "Press" }, event = self.hotkeyshortcuts[hotkey] }
+        end
+        self.key_events.HotKey = { { "Shift", "Back" }, event = self.hotkeyshortcuts[hotkey] }
+        self.key_events.HotKey = { { "Shift", "Home" }, event = self.hotkeyshortcuts[hotkey] }
+        self.key_events.HotKey = { { "Shift", "Menu" }, event = self.hotkeyshortcuts[hotkey] }
+    end
+    if Device:hasKeyboard() then
+        self.key_events.HotKey = { { "Shift", "Up" }, event = self.hotkeyshortcuts[hotkey] }
+        self.key_events.HotKey = { { "Shift", "Down" }, event = self.hotkeyshortcuts[hotkey] }
+        self.key_events.HotKey = { { "Shift", "Left" }, event = self.hotkeyshortcuts[hotkey] }
+        self.key_events.HotKey = { { "Shift", "Right" }, event = self.hotkeyshortcuts[hotkey] }
+        self.key_events.HotKey = { { "Shift", "LPgFwd" }, event = self.hotkeyshortcuts[hotkey] }
+        self.key_events.HotKey = { { "Shift", "LPgBack" }, event = self.hotkeyshortcuts[hotkey] }
+        self.key_events.HotKey = { { "Shift", "RPgFwd" }, event = self.hotkeyshortcuts[hotkey] }
+        self.key_events.HotKey = { { "Shift", "RPgBack" }, event = self.hotkeyshortcuts[hotkey] }
+        self.key_events.HotKey = { { "Shift", "Press" }, event = self.hotkeyshortcuts[hotkey] }
+        self.key_events.HotKey = { { "Shift", "Back" }, event = self.hotkeyshortcuts[hotkey] }
+        self.key_events.HotKey = { { "Shift", "Home" }, event = self.hotkeyshortcuts[hotkey] }
+        self.key_events.HotKey = { { "Shift", "Menu" }, event = self.hotkeyshortcuts[hotkey] }
     end
 end
 
-function HotKeyShortcuts:shortcutTitleFunc(key)
-    local title = hotkeyshortcuts_list[key]
-    return T(_("%1: (%2)"), title, Dispatcher:menuTextFunc(self.hotkeyshortcuts[key]))
+function HotKeyShortcuts:shortcutTitleFunc(hotkey)
+    local title = hotkeyshortcuts_list[hotkey]
+    return T(_("%1: (%2)"), title, Dispatcher:menuTextFunc(self.hotkeyshortcuts[hotkey]))
 end
 
-function HotKeyShortcuts:genMenu(key)
+function HotKeyShortcuts:genMenu(hotkey)
     local sub_items = {}
-    if hotkeyshortcuts_list[key] ~= nil then
+    if hotkeyshortcuts_list[hotkey] ~= nil then
         table.insert(sub_items, {
-            text = T(_("%1 (default)"), Dispatcher:menuTextFunc(self.defaults[key])),
+            text = T(_("%1 (default)"), Dispatcher:menuTextFunc(self.defaults[hotkey])),
             keep_menu_open = true,
             separator = true,
             checked_func = function()
-                return util.tableEquals(self.hotkeyshortcuts[key], self.defaults[key])
+                return util.tableEquals(self.hotkeyshortcuts[hotkey], self.defaults[hotkey])
             end,
             callback = function()
-                self.hotkeyshortcuts[key] = util.tableDeepCopy(self.defaults[key])
+                self.hotkeyshortcuts[hotkey] = util.tableDeepCopy(self.defaults[hotkey])
                 self.updated = true
             end,
         })
@@ -135,35 +160,35 @@ function HotKeyShortcuts:genMenu(key)
         text = _("Pass through"),
         keep_menu_open = true,
         checked_func = function()
-            return self.hotkeyshortcuts[key] == nil
+            return self.hotkeyshortcuts[hotkey] == nil
         end,
         callback = function()
-            self.hotkeyshortcuts[key] = nil
+            self.hotkeyshortcuts[hotkey] = nil
             self.updated = true
         end,
     })
-    Dispatcher:addSubMenu(self, sub_items, self.hotkeyshortcuts, key)
+    Dispatcher:addSubMenu(self, sub_items, self.hotkeyshortcuts, hotkey)
     sub_items.max_per_page = nil -- restore default, settings in page 2
     table.insert(sub_items, {
         text = _("Always active"),
         checked_func = function()
-            return self.hotkeyshortcuts[key] ~= nil
-            and self.hotkeyshortcuts[key].settings ~= nil
-            and self.hotkeyshortcuts[key].settings.always_active
+            return self.hotkeyshortcuts[hotkey] ~= nil
+            and self.hotkeyshortcuts[hotkey].settings ~= nil
+            and self.hotkeyshortcuts[hotkey].settings.always_active
         end,
         callback = function()
-            if self.hotkeyshortcuts[key] then
-                if self.hotkeyshortcuts[key].settings then
-                    if self.hotkeyshortcuts[key].settings.always_active then
-                        self.hotkeyshortcuts[key].settings.always_active = nil
-                        if next(self.hotkeyshortcuts[key].settings) == nil then
-                            self.hotkeyshortcuts[key].settings = nil
+            if self.hotkeyshortcuts[hotkey] then
+                if self.hotkeyshortcuts[hotkey].settings then
+                    if self.hotkeyshortcuts[hotkey].settings.always_active then
+                        self.hotkeyshortcuts[hotkey].settings.always_active = nil
+                        if next(self.hotkeyshortcuts[hotkey].settings) == nil then
+                            self.hotkeyshortcuts[hotkey].settings = nil
                         end
                     else
-                        self.hotkeyshortcuts[key].settings.always_active = true
+                        self.hotkeyshortcuts[hotkey].settings.always_active = true
                     end
                 else
-                    self.hotkeyshortcuts[key].settings = {["always_active"] = true}
+                    self.hotkeyshortcuts[hotkey].settings = {["always_active"] = true}
                 end
                 self.updated = true
             end
@@ -172,7 +197,7 @@ function HotKeyShortcuts:genMenu(key)
     return sub_items
 end
 
-function HotKeyShortcuts:genSubItem(key, separator, hold_callback)
+function HotKeyShortcuts:genSubItem(hotkey, separator, hold_callback)
     local reader_only = {
         -- these button combinations are used by FM already, don't allow users to customise them.
         modifier_plus_left_page_forward = true,
@@ -182,13 +207,13 @@ function HotKeyShortcuts:genSubItem(key, separator, hold_callback)
         modifier_plus_press = true,
     }
     local enabled_func
-    if reader_only[key] then
-       enabled_func = function() return self.key_mode == "hotkeyshortcuts_reader" end
+    if reader_only[hotkey] then
+       enabled_func = function() return self.hotkey_mode == "hotkeyshortcuts_reader" end
     end
     return {
-        text_func = function() return self:shortcutTitleFunc(key) end,
+        text_func = function() return self:shortcutTitleFunc(hotkey) end,
         enabled_func = enabled_func,
-        sub_item_table_func = function() return self:genMenu(key) end,
+        sub_item_table_func = function() return self:genMenu(hotkey) end,
         separator = separator,
         hold_callback = hold_callback,
         ignored_by_menu_search = true, -- This item is not strictly duplicated, but its subitems are.
@@ -219,7 +244,7 @@ function HotKeyShortcuts:addToMainMenu(menu_items)
             },
             {
                 text = _("Page-turn buttons"),
-                enabled_func = function() return self.key_mode == "hotkeyshortcuts_reader" end,
+                enabled_func = function() return self.hotkey_mode == "hotkeyshortcuts_reader" end,
                 sub_item_table = self:genSubItemTable({
                     "modifier_plus_left_page_forward",
                     "modifier_plus_left_page_back",
