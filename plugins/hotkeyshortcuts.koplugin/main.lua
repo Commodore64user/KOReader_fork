@@ -89,49 +89,49 @@ end ]]
 
 function HotKeyShortcuts:registerKeyEvents()
     if Device:hasScreenKB() then
-        self.key_events.HotKey = { { "ScreenKB", "Up" }, event = self.hotkeyshortcuts[hotkey] }
-        self.key_events.HotKey = { { "ScreenKB", "Down" }, event = self.hotkeyshortcuts[hotkey] }
-        self.key_events.HotKey = { { "ScreenKB", "Left" }, event = self.hotkeyshortcuts[hotkey] }
-        self.key_events.HotKey = { { "ScreenKB", "Right" }, event = self.hotkeyshortcuts[hotkey] }
+        self.key_events.HotKey = { { "ScreenKB", "Up" }, args = self.hotkeyshortcuts[hotkey] }
+        self.key_events.HotKey = { { "ScreenKB", "Down" }, args = self.hotkeyshortcuts[hotkey] }
+        self.key_events.HotKey = { { "ScreenKB", "Left" }, args = self.hotkeyshortcuts[hotkey] }
+        self.key_events.HotKey = { { "ScreenKB", "Right" }, args = self.hotkeyshortcuts[hotkey] }
         if self.hotkey_mode == "hotkeyshortcuts_reader" then
-            self.key_events.HotKey = { { "ScreenKB", "LPgFwd" }, event = self.hotkeyshortcuts[hotkey] }
-            self.key_events.HotKey = { { "ScreenKB", "LPgBack" }, event = self.hotkeyshortcuts[hotkey] }
-            self.key_events.HotKey = { { "ScreenKB", "RPgFwd" }, event = self.hotkeyshortcuts[hotkey] }
-            self.key_events.HotKey = { { "ScreenKB", "RPgBack" }, event = self.hotkeyshortcuts[hotkey] }
-            self.key_events.HotKey = { { "ScreenKB", "Press" }, event = self.hotkeyshortcuts[hotkey] }
+            self.key_events.HotKey = { { "ScreenKB", "LPgFwd" }, args = self.hotkeyshortcuts[hotkey] }
+            self.key_events.HotKey = { { "ScreenKB", "LPgBack" }, args = self.hotkeyshortcuts[hotkey] }
+            self.key_events.HotKey = { { "ScreenKB", "RPgFwd" }, args = self.hotkeyshortcuts[hotkey] }
+            self.key_events.HotKey = { { "ScreenKB", "RPgBack" }, args = self.hotkeyshortcuts[hotkey] }
+            self.key_events.HotKey = { { "ScreenKB", "Press" }, args = self.hotkeyshortcuts[hotkey] }
         end
-        self.key_events.HotKey = { { "ScreenKB", "Back" }, event = self.hotkeyshortcuts[hotkey] }
-        self.key_events.HotKey = { { "ScreenKB", "Home" }, event = self.hotkeyshortcuts[hotkey] }
-        -- no event for screenkb+menu
+        self.key_events.HotKey = { { "ScreenKB", "Back" }, args = self.hotkeyshortcuts[hotkey] }
+        self.key_events.HotKey = { { "ScreenKB", "Home" }, args = self.hotkeyshortcuts[hotkey] }
+        -- no args for screenkb+menu
     else
-        self.key_events.HotKey = { { "Shift", "Up" }, event = self.hotkeyshortcuts[hotkey] }
-        self.key_events.HotKey = { { "Shift", "Down" }, event = self.hotkeyshortcuts[hotkey] }
-        self.key_events.HotKey = { { "Shift", "Left" }, event = self.hotkeyshortcuts[hotkey] }
-        self.key_events.HotKey = { { "Shift", "Right" }, event = self.hotkeyshortcuts[hotkey] }
+        self.key_events.HotKey = { { "Shift", "Up" }, args = self.hotkeyshortcuts[hotkey] }
+        self.key_events.HotKey = { { "Shift", "Down" }, args = self.hotkeyshortcuts[hotkey] }
+        self.key_events.HotKey = { { "Shift", "Left" }, args = self.hotkeyshortcuts[hotkey] }
+        self.key_events.HotKey = { { "Shift", "Right" }, args = self.hotkeyshortcuts[hotkey] }
         if self.hotkey_mode == "hotkeyshortcuts_reader" then
-            self.key_events.HotKey = { { "Shift", "LPgFwd" }, event = self.hotkeyshortcuts[hotkey] }
-            self.key_events.HotKey = { { "Shift", "LPgBack" }, event = self.hotkeyshortcuts[hotkey] }
-            self.key_events.HotKey = { { "Shift", "RPgFwd" }, event = self.hotkeyshortcuts[hotkey] }
-            self.key_events.HotKey = { { "Shift", "RPgBack" }, event = self.hotkeyshortcuts[hotkey] }
-            self.key_events.HotKey = { { "Shift", "Press" }, event = self.hotkeyshortcuts[hotkey] }
+            self.key_events.HotKey = { { "Shift", "LPgFwd" }, args = self.hotkeyshortcuts[hotkey] }
+            self.key_events.HotKey = { { "Shift", "LPgBack" }, args = self.hotkeyshortcuts[hotkey] }
+            self.key_events.HotKey = { { "Shift", "RPgFwd" }, args = self.hotkeyshortcuts[hotkey] }
+            self.key_events.HotKey = { { "Shift", "RPgBack" }, args = self.hotkeyshortcuts[hotkey] }
+            self.key_events.HotKey = { { "Shift", "Press" }, args = self.hotkeyshortcuts[hotkey] }
         end
-        self.key_events.HotKey = { { "Shift", "Back" }, event = self.hotkeyshortcuts[hotkey] }
-        self.key_events.HotKey = { { "Shift", "Home" }, event = self.hotkeyshortcuts[hotkey] }
-        self.key_events.HotKey = { { "Shift", "Menu" }, event = self.hotkeyshortcuts[hotkey] }
+        self.key_events.HotKey = { { "Shift", "Back" }, args = self.hotkeyshortcuts[hotkey] }
+        self.key_events.HotKey = { { "Shift", "Home" }, args = self.hotkeyshortcuts[hotkey] }
+        self.key_events.HotKey = { { "Shift", "Menu" }, args = self.hotkeyshortcuts[hotkey] }
     end
     if Device:hasKeyboard() then
-        self.key_events.HotKey = { { "Shift", "Up" }, event = self.hotkeyshortcuts[hotkey] }
-        self.key_events.HotKey = { { "Shift", "Down" }, event = self.hotkeyshortcuts[hotkey] }
-        self.key_events.HotKey = { { "Shift", "Left" }, event = self.hotkeyshortcuts[hotkey] }
-        self.key_events.HotKey = { { "Shift", "Right" }, event = self.hotkeyshortcuts[hotkey] }
-        self.key_events.HotKey = { { "Shift", "LPgFwd" }, event = self.hotkeyshortcuts[hotkey] }
-        self.key_events.HotKey = { { "Shift", "LPgBack" }, event = self.hotkeyshortcuts[hotkey] }
-        self.key_events.HotKey = { { "Shift", "RPgFwd" }, event = self.hotkeyshortcuts[hotkey] }
-        self.key_events.HotKey = { { "Shift", "RPgBack" }, event = self.hotkeyshortcuts[hotkey] }
-        self.key_events.HotKey = { { "Shift", "Press" }, event = self.hotkeyshortcuts[hotkey] }
-        self.key_events.HotKey = { { "Shift", "Back" }, event = self.hotkeyshortcuts[hotkey] }
-        self.key_events.HotKey = { { "Shift", "Home" }, event = self.hotkeyshortcuts[hotkey] }
-        self.key_events.HotKey = { { "Shift", "Menu" }, event = self.hotkeyshortcuts[hotkey] }
+        self.key_events.HotKey = { { "Shift", "Up" }, args = self.hotkeyshortcuts[hotkey] }
+        self.key_events.HotKey = { { "Shift", "Down" }, args = self.hotkeyshortcuts[hotkey] }
+        self.key_events.HotKey = { { "Shift", "Left" }, args = self.hotkeyshortcuts[hotkey] }
+        self.key_events.HotKey = { { "Shift", "Right" }, args = self.hotkeyshortcuts[hotkey] }
+        self.key_events.HotKey = { { "Shift", "LPgFwd" }, args = self.hotkeyshortcuts[hotkey] }
+        self.key_events.HotKey = { { "Shift", "LPgBack" }, args = self.hotkeyshortcuts[hotkey] }
+        self.key_events.HotKey = { { "Shift", "RPgFwd" }, args = self.hotkeyshortcuts[hotkey] }
+        self.key_events.HotKey = { { "Shift", "RPgBack" }, args = self.hotkeyshortcuts[hotkey] }
+        self.key_events.HotKey = { { "Shift", "Press" }, args = self.hotkeyshortcuts[hotkey] }
+        self.key_events.HotKey = { { "Shift", "Back" }, args = self.hotkeyshortcuts[hotkey] }
+        self.key_events.HotKey = { { "Shift", "Home" }, args = self.hotkeyshortcuts[hotkey] }
+        self.key_events.HotKey = { { "Shift", "Menu" }, args = self.hotkeyshortcuts[hotkey] }
     end
 end
 
