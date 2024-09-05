@@ -1,7 +1,7 @@
 local Device = require("device")
 
 return {
-    shortcuts_fm = {
+    hotkeyshortcuts_fm = {
         modifier_plus_up                 = nil,
         modifier_plus_down               = nil,
         modifier_plus_left               = nil,
@@ -12,7 +12,8 @@ return {
         modifier_plus_right_page_back    = nil,
         modifier_plus_back               = {open_previous_document = true,},
         modifier_plus_home               = Device:hasWifiToggle() and {toggle_wifi = true,} or {},
-        modifier_plus_press              = nil,
+        modifier_plus_press              = nil, -- keep nil.
+        modifier_plus_menu               = nil, -- keep nil.
         -- alt
         alt_plus_up                 = nil,
         alt_plus_down               = nil,
@@ -25,8 +26,9 @@ return {
         alt_plus_back               = nil,
         alt_plus_home               = nil,
         alt_plus_press              = nil,
+        alt_plus_menu               = nil,
     },
-    shortcuts_reader = {
+    hotkeyshortcuts_reader = {
         modifier_plus_up                 = {toc = true,},
         modifier_plus_down               = {book_map = true,},
         modifier_plus_left               = {bookmarks = true,},
@@ -38,6 +40,7 @@ return {
         modifier_plus_back               = {open_previous_document = true,},
         modifier_plus_home               = Device:hasWifiToggle() and {toggle_wifi = true,} or {},
         modifier_plus_press              = {full_refresh = true,},
+        modifier_plus_menu               = nil, -- keep nil.
         --alt
         alt_plus_up                 = nil,
         alt_plus_down               = nil,
@@ -50,5 +53,6 @@ return {
         alt_plus_back               = nil,
         alt_plus_home               = nil,
         alt_plus_press              = nil,
+        alt_plus_menu               = nil,
     },
 }
