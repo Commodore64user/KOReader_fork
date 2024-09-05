@@ -47,7 +47,7 @@ local hotkeyshortcuts_list = {
     modifier_plus_press              = Device:hasScreenKB() and _("ScreenKB + Press")   or _("Shift + Press"),
     -- mod+Menu is already used globally for screenshots (on k4), don't add it here.
 }
-if not Device:hasKeyboard() then
+if Device:hasKeyboard() then
     table.insert(hotkeyshortcuts_list, {
         modifier_plus_menu          = _("Shift + Menu"),
         -- alt
@@ -237,7 +237,7 @@ function HotKeyShortcuts:addToMainMenu(menu_items)
             },
         },
     }
-    if not Device:hasKeyboard() then
+    if Device:hasKeyboard() then
         table.insert(menu_items.hotkeyshortcuts.sub_item_table, {
             text = _("Alt-cursor keys"),
             sub_item_table = self:genSubItemTable({
