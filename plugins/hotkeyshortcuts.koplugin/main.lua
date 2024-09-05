@@ -24,16 +24,16 @@ if not (Device:hasScreenKB() or Device:hasSymKey()) then
     return { disabled = true, }
 end
 
-local Shortcuts = InputContainer:extend{
-    name = "shortcuts",
+local HotKeyShortcuts = InputContainer:extend{
+    name = "hotkeyshortcuts",
     settings_data = nil,
-    shortcuts = require("device/kindle/event_map_kindle4"),
+    hotkeyshortcuts = require("device/kindle/event_map_kindle4"),
     defaults = nil,
     updated = false,
 }
-local shortcuts_path = FFIUtil.joinPath(DataStorage:getSettingsDir(), "shortcuts.lua")
+local hotkeyshortcuts_path = FFIUtil.joinPath(DataStorage:getSettingsDir(), "hotkeyshortcuts.lua")
 
-local shortcut_list = {
+local hotkeyshortcuts_list = {
     modifier_plus_up                 = Device:hasScreenKB() and _("ScreenKB + Up")      or _("Shift + Up"),
     modifier_plus_down               = Device:hasScreenKB() and _("ScreenKB + Down")    or _("Shift + Down"),
     modifier_plus_left               = Device:hasScreenKB() and _("ScreenKB + Left")    or _("Shift + Left"),
@@ -45,9 +45,11 @@ local shortcut_list = {
     modifier_plus_back               = Device:hasScreenKB() and _("ScreenKB + Back")    or _("Shift + Back"),
     modifier_plus_home               = Device:hasScreenKB() and _("ScreenKB + Home")    or _("Shift + Home"),
     modifier_plus_press              = Device:hasScreenKB() and _("ScreenKB + Press")   or _("Shift + Press"),
+    -- mod+Menu is already used globally for screenshots (on k4), don't add it here.
 }
-if Device:hasKeyboard() then
-    table.insert(shortcut_list, {
+if not Device:hasKeyboard() then
+    table.insert(hotkeyshortcuts_list, {
+        modifier_plus_menu          = _("Shift + Menu"),
         -- alt
         alt_plus_up                 = _("Alt + Up"),
         alt_plus_down               = _("Alt + Down"),
@@ -60,28 +62,41 @@ if Device:hasKeyboard() then
         alt_plus_back               = _("Alt + Back"),
         alt_plus_home               = _("Alt + Home"),
         alt_plus_press              = _("Alt + Press"),
+        alt_plus_menu               = _("Alt + Menu")
     })
 end
 
-function Shortcuts:init()
+function HotKeyShortcuts:init()
     local defaults_path = FFIUtil.joinPath(self.path, "defaults.lua")
-    if not lfs.attributes(shortcuts_path, "mode") then
-        FFIUtil.copyFile(defaults_path, shortcuts_path)
+    if not lfs.attributes(hotkeyshortcuts_path, "mode") then
+        FFIUtil.copyFile(defaults_path, hotkeyshortcuts_path)
     end
     self.is_docless = self.ui == nil or self.ui.document == nil
-    self.key_mode = self.is_docless and "shortcuts_fm" or "shortcuts_reader"
+    self.key_mode = self.is_docless and "hotkeyshortcuts_fm" or "hotkeyshortcuts_reader"
     self.defaults = LuaSettings:open(defaults_path).data[self.key_mode]
     if not self.settings_data then
-        self.settings_data = LuaSettings:open(shortcuts_path)
+        self.settings_data = LuaSettings:open(hotkeyshortcuts_path)
     end
-    self.shortcuts = self.settings_data.data[self.key_mode]
+    self.hotkeyshortcuts = self.settings_data.data[self.key_mode]
 
     self.ui.menu:registerToMainMenu(self)
     Dispatcher:init()
     self:registerKeyEvents()
 end
 
-function Shortcuts:registerKeyEvents()
+function HotKeyShortcuts:hotkeyshortcutsAction(action, key, mod)
+    local action_list = self.hotkeyshortcuts[action]
+    if action_list == nil then
+        return
+    else
+        -- self.ui:handleEvent(Event:new("HandledAsSwipe"))
+        local exec_props = { hotkeyshortcuts = key.modifiers[mod] }
+        Dispatcher:execute(action_list, exec_props)
+    end
+    return true
+end
+
+function HotKeyShortcuts:registerKeyEvents()
     if Device:hasScreenKB() then
         self.key_events.ModPlusUp = { { "ScreenKB", "Up" } }
         self.key_events.ModPlusDown = { { "ScreenKB", "Down" } }
@@ -95,23 +110,23 @@ function Shortcuts:registerKeyEvents()
     end
 end
 
-function Shortcuts:shortcutTitleFunc(key)
-    local title = shortcut_list[key]
-    return T(_("%1: (%2)"), title, Dispatcher:menuTextFunc(self.shortcuts[key]))
+function HotKeyShortcuts:shortcutTitleFunc(key)
+    local title = hotkeyshortcuts_list[key]
+    return T(_("%1: (%2)"), title, Dispatcher:menuTextFunc(self.hotkeyshortcuts[key]))
 end
 
-function Shortcuts:genMenu(key)
+function HotKeyShortcuts:genMenu(key)
     local sub_items = {}
-    if shortcut_list[key] ~= nil then
+    if hotkeyshortcuts_list[key] ~= nil then
         table.insert(sub_items, {
             text = T(_("%1 (default)"), Dispatcher:menuTextFunc(self.defaults[key])),
             keep_menu_open = true,
             separator = true,
             checked_func = function()
-                return util.tableEquals(self.shortcuts[key], self.defaults[key])
+                return util.tableEquals(self.hotkeyshortcuts[key], self.defaults[key])
             end,
             callback = function()
-                self.shortcuts[key] = util.tableDeepCopy(self.defaults[key])
+                self.hotkeyshortcuts[key] = util.tableDeepCopy(self.defaults[key])
                 self.updated = true
             end,
         })
@@ -120,35 +135,35 @@ function Shortcuts:genMenu(key)
         text = _("Pass through"),
         keep_menu_open = true,
         checked_func = function()
-            return self.shortcuts[key] == nil
+            return self.hotkeyshortcuts[key] == nil
         end,
         callback = function()
-            self.shortcuts[key] = nil
+            self.hotkeyshortcuts[key] = nil
             self.updated = true
         end,
     })
-    Dispatcher:addSubMenu(self, sub_items, self.shortcuts, key)
+    Dispatcher:addSubMenu(self, sub_items, self.hotkeyshortcuts, key)
     sub_items.max_per_page = nil -- restore default, settings in page 2
     table.insert(sub_items, {
         text = _("Always active"),
         checked_func = function()
-            return self.shortcuts[key] ~= nil
-            and self.shortcuts[key].settings ~= nil
-            and self.shortcuts[key].settings.always_active
+            return self.hotkeyshortcuts[key] ~= nil
+            and self.hotkeyshortcuts[key].settings ~= nil
+            and self.hotkeyshortcuts[key].settings.always_active
         end,
         callback = function()
-            if self.shortcuts[key] then
-                if self.shortcuts[key].settings then
-                    if self.shortcuts[key].settings.always_active then
-                        self.shortcuts[key].settings.always_active = nil
-                        if next(self.shortcuts[key].settings) == nil then
-                            self.shortcuts[key].settings = nil
+            if self.hotkeyshortcuts[key] then
+                if self.hotkeyshortcuts[key].settings then
+                    if self.hotkeyshortcuts[key].settings.always_active then
+                        self.hotkeyshortcuts[key].settings.always_active = nil
+                        if next(self.hotkeyshortcuts[key].settings) == nil then
+                            self.hotkeyshortcuts[key].settings = nil
                         end
                     else
-                        self.shortcuts[key].settings.always_active = true
+                        self.hotkeyshortcuts[key].settings.always_active = true
                     end
                 else
-                    self.shortcuts[key].settings = {["always_active"] = true}
+                    self.hotkeyshortcuts[key].settings = {["always_active"] = true}
                 end
                 self.updated = true
             end
@@ -157,7 +172,7 @@ function Shortcuts:genMenu(key)
     return sub_items
 end
 
-function Shortcuts:genSubItem(key, separator, hold_callback)
+function HotKeyShortcuts:genSubItem(key, separator, hold_callback)
     local reader_only = {
         -- these button combinations are used by FM already, don't allow users to customise them.
         modifier_plus_left_page_forward = true,
@@ -168,7 +183,7 @@ function Shortcuts:genSubItem(key, separator, hold_callback)
     }
     local enabled_func
     if reader_only[key] then
-       enabled_func = function() return self.key_mode == "shortcuts_reader" end
+       enabled_func = function() return self.key_mode == "hotkeyshortcuts_reader" end
     end
     return {
         text_func = function() return self:shortcutTitleFunc(key) end,
@@ -181,16 +196,16 @@ function Shortcuts:genSubItem(key, separator, hold_callback)
     }
 end
 
-function Shortcuts:genSubItemTable(shortcuts)
+function HotKeyShortcuts:genSubItemTable(hotkeyshortcuts)
     local sub_item_table = {}
-    for _, item in ipairs(shortcuts) do
+    for _, item in ipairs(hotkeyshortcuts) do
         table.insert(sub_item_table, self:genSubItem(item))
     end
     return sub_item_table
 end
 
-function Shortcuts:addToMainMenu(menu_items)
-    menu_items.shortcuts = {
+function HotKeyShortcuts:addToMainMenu(menu_items)
+    menu_items.hotkeyshortcuts = {
         text = _("Shortcuts"),
         sub_item_table = {
             {
@@ -204,7 +219,7 @@ function Shortcuts:addToMainMenu(menu_items)
             },
             {
                 text = _("Page-turn buttons"),
-                enabled_func = function() return self.key_mode == "shortcuts_reader" end,
+                enabled_func = function() return self.key_mode == "hotkeyshortcuts_reader" end,
                 sub_item_table = self:genSubItemTable({
                     "modifier_plus_left_page_forward",
                     "modifier_plus_left_page_back",
@@ -222,8 +237,8 @@ function Shortcuts:addToMainMenu(menu_items)
             },
         },
     }
-    if Device:hasKeyboard() then
-        table.insert(menu_items.shortcuts.sub_item_table, {
+    if not Device:hasKeyboard() then
+        table.insert(menu_items.hotkeyshortcuts.sub_item_table, {
             text = _("Alt-cursor keys"),
             sub_item_table = self:genSubItemTable({
                 "alt_plus_up",
@@ -232,7 +247,7 @@ function Shortcuts:addToMainMenu(menu_items)
                 "alt_plus_right"
             }),
         })
-        table.insert(menu_items.shortcuts.sub_item_table, {
+        table.insert(menu_items.hotkeyshortcuts.sub_item_table, {
             text = _("Alt-page-turn buttons"),
             sub_item_table = self:genSubItemTable({
                 "alt_plus_left_page_forward",
@@ -241,28 +256,30 @@ function Shortcuts:addToMainMenu(menu_items)
                 "alt_plus_right_page_back"
             }),
         })
-        table.insert(menu_items.shortcuts.sub_item_table, {
+        table.insert(menu_items.hotkeyshortcuts.sub_item_table, {
             text = _("Alt-function keys"),
             sub_item_table = self:genSubItemTable({
+                "modifier_plus_menu",
                 "alt_plus_back",
                 "alt_plus_home",
-                "alt_plus_press"
+                "alt_plus_press",
+                "alt_plus_menu"
             }),
         })
-    end
+    end -- if Device:hasKeyboard
 end
 
-function Shortcuts:onFlushSettings()
+function HotKeyShortcuts:onFlushSettings()
     if self.settings_data and self.updated then
         self.settings_data:flush()
         self.updated = false
     end
 end
 
-function Shortcuts:updateProfiles(action_old_name, action_new_name)
-    for _, section in ipairs({ "shortcuts_fm", "shortcuts_reader" }) do
-        local shortcuts = self.settings_data.data[section]
-        for shortcut_name, shortcut in pairs(shortcuts) do
+function HotKeyShortcuts:updateProfiles(action_old_name, action_new_name)
+    for _, section in ipairs({ "hotkeyshortcuts_fm", "hotkeyshortcuts_reader" }) do
+        local hotkeyshortcuts = self.settings_data.data[section]
+        for shortcut_name, shortcut in pairs(hotkeyshortcuts) do
             if shortcut[action_old_name] then
                 if shortcut.settings and shortcut.settings.order then
                     for i, action in ipairs(shortcut.settings.order) do
@@ -296,4 +313,4 @@ function Shortcuts:updateProfiles(action_old_name, action_new_name)
     end
 end
 
-return Shortcuts
+return HotKeyShortcuts
