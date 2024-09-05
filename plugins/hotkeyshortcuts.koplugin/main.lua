@@ -93,7 +93,7 @@ function HotKeyShortcuts:registerKeyEvents()
         self.key_events.HotKey = { { "ScreenKB", "Down" }, args = self.hotkeyshortcuts[hotkey] }
         self.key_events.HotKey = { { "ScreenKB", "Left" }, args = self.hotkeyshortcuts[hotkey] }
         self.key_events.HotKey = { { "ScreenKB", "Right" }, args = self.hotkeyshortcuts[hotkey] }
-        if self.hotkey_mode == "hotkeyshortcuts_reader" then
+        if self.ui ~= nil then
             self.key_events.HotKey = { { "ScreenKB", "LPgFwd" }, args = self.hotkeyshortcuts[hotkey] }
             self.key_events.HotKey = { { "ScreenKB", "LPgBack" }, args = self.hotkeyshortcuts[hotkey] }
             self.key_events.HotKey = { { "ScreenKB", "RPgFwd" }, args = self.hotkeyshortcuts[hotkey] }
@@ -108,7 +108,7 @@ function HotKeyShortcuts:registerKeyEvents()
         self.key_events.HotKey = { { "Shift", "Down" }, args = self.hotkeyshortcuts[hotkey] }
         self.key_events.HotKey = { { "Shift", "Left" }, args = self.hotkeyshortcuts[hotkey] }
         self.key_events.HotKey = { { "Shift", "Right" }, args = self.hotkeyshortcuts[hotkey] }
-        if self.hotkey_mode == "hotkeyshortcuts_reader" then
+        if self.ui ~= nil then
             self.key_events.HotKey = { { "Shift", "LPgFwd" }, args = self.hotkeyshortcuts[hotkey] }
             self.key_events.HotKey = { { "Shift", "LPgBack" }, args = self.hotkeyshortcuts[hotkey] }
             self.key_events.HotKey = { { "Shift", "RPgFwd" }, args = self.hotkeyshortcuts[hotkey] }
