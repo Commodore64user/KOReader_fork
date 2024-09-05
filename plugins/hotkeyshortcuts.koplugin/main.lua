@@ -17,7 +17,7 @@ end
 local HotKeyShortcuts = InputContainer:extend{
     name = "hotkeyshortcuts",
     settings_data = nil,
-    hotkeyshortcuts = nil,--require("device/kindle/event_map_kindle4"),
+    hotkeyshortcuts = nil,
     defaults = nil,
     updated = false,
 }
@@ -40,7 +40,7 @@ local hotkeyshortcuts_list = {
 }
 if Device:hasKeyboard() then
     table.insert(hotkeyshortcuts_list, {
-        modifier_plus_menu          = _("Alt + Up"),
+        modifier_plus_menu          = _("Shift + Up"),
         alt_plus_up                 = _("Alt + Up"),
         alt_plus_down               = _("Alt + Down"),
         alt_plus_left               = _("Alt + Left"),
