@@ -59,6 +59,7 @@ function BBoxWidget:init()
     if Device:hasKeys() then
         self.key_events.Close = { { Device.input.group.Back } }
         self.key_events.Select = { { "Press" } }
+        self.key_events.BBoxWidgetToHome = { { "Home" } }
     end
 end
 
@@ -340,6 +341,11 @@ end
 function BBoxWidget:onClose()
     self.ui:handleEvent(Event:new("CancelPageCrop"))
     return true
+end
+
+function BBoxWidget:onBBoxWidgetToHome()
+    self:onClose()
+    self.ui:onHome()
 end
 
 function BBoxWidget:onSelect()

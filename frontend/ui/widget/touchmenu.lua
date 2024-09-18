@@ -512,6 +512,7 @@ function TouchMenu:init()
 
     self.key_events.Back = { { Input.group.Back } }
     self.key_events.Close = { { "Menu" } }
+    self.key_events.TouchMenuToHome = { { "Home" } }
     if Device:hasFewKeys() then
         self.key_events.Back = { { "Left" } }
     end
@@ -1002,6 +1003,16 @@ end
 
 function TouchMenu:onClose()
     self:closeMenu()
+end
+
+function TouchMenu:onTouchMenuToHome()
+    local is_docless = self.ui == nil or self.ui.document == nil
+    self:closeMenu()
+    if not is_docless then
+        self.ui:onHome()
+    else
+        -- self.
+    end
 end
 
 function TouchMenu:onBack()
