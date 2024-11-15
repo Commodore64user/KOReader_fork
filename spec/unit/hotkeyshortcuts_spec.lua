@@ -1,11 +1,11 @@
-local HotKeyShortcuts = require("plugins/hotkeyshortcuts.koplugin/main")
-local LuaSettings = require("luasettings")
-local Dispatcher = require("dispatcher")
-local Device = require("device")
-local UIManager = require("ui/uimanager")
-
 describe("HotKeyShortcuts", function()
-    local hotkeyshortcuts
+    local hotkeyshortcuts, LuaSettings, Dispatcher
+
+    setup(function()
+        HotKeyShortcuts = require("plugins/hotkeyshortcuts.koplugin/main")
+        LuaSettings = require("luasettings")
+        Dispatcher = require("dispatcher")
+    end)
 
     before_each(function()
         hotkeyshortcuts = HotKeyShortcuts:new()
