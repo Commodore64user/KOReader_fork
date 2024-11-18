@@ -76,6 +76,7 @@ local InfoMessage = InputContainer:extend{
     show_delay = nil,
     -- Set to true when it might be displayed after some processing, to avoid accidental dismissal
     flush_events_on_show = false,
+    limit_to_one_line = false, -- this and 'height' are mutually exclusive options
 }
 
 function InfoMessage:init()
@@ -142,6 +143,15 @@ function InfoMessage:init()
             height = self.height,
             alignment = self.alignment,
             dialog = self,
+            lang = self.lang,
+            para_direction_rtl = self.para_direction_rtl,
+            auto_para_direction = self.auto_para_direction,
+        }
+    elseif self.limit_to_one_line then
+        text_widget = TextWidget:new{
+            text = self.text,
+            face = self.face,
+            max_width = 0.8 * Screen:getWidth(),
             lang = self.lang,
             para_direction_rtl = self.para_direction_rtl,
             auto_para_direction = self.auto_para_direction,
