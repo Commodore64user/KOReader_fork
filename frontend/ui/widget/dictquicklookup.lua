@@ -1009,6 +1009,14 @@ function DictQuickLookup:toggleTemporaryFullScreen()
     if self._is_temporary_fullscreen_mode then return false end
     if self.is_wiki_fullpage or G_reader_settings:isTrue("dict_largewindow") then return false end
 
+    -- Remove ourselves from window_list before creating new instance
+    for i = #DictQuickLookup.window_list, 1, -1 do
+        if DictQuickLookup.window_list[i] == self then
+            table.remove(DictQuickLookup.window_list, i)
+            break
+        end
+    end
+
     -- Prepare to open a new temporary large instance
     DictQuickLookup.temp_fullscreen_request = {
         word = self.word, -- The original word used to open this instance
