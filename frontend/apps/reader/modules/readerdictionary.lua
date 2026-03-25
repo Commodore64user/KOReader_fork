@@ -658,7 +658,6 @@ function ReaderDictionary:_genCustomizeButtonsMenu()
                 title = _("Sort and toggle buttons"),
                 item_table = sort_items,
                 callback = function()
-                    local config = getDictConfig()
                     local new_order = {}
 
                     for _, item in ipairs(sort_items) do
