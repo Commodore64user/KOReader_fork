@@ -732,6 +732,8 @@ function DictQuickLookup:_getButtonPool()
             id = "prev_dict",
             text = prev_dict_text,
             vsync = true,
+            pairs_with = "next_dict",
+            can_shrink = true,
             enabled = self:isPrevDictAvaiable(),
             callback = function()
                 self:onChangeToPrevDict()
@@ -756,6 +758,8 @@ function DictQuickLookup:_getButtonPool()
             id = "next_dict",
             text = next_dict_text,
             vsync = true,
+            pairs_with = "prev_dict",
+            can_shrink = true,
             enabled = self:isNextDictAvaiable(),
             callback = function()
                 self:onChangeToNextDict()
@@ -901,15 +905,16 @@ function DictQuickLookup:buildButtonLayout()
         for _, extra_row in ipairs(extra_layout) do
             table.insert(button_layout, extra_row)
         end
-        local has_dict_nav = false
+        local has_shrinkable_buttons = false
         for _, row_ids in ipairs(button_layout) do
             local new_row = {}
             for _, btn_id in ipairs(row_ids) do
-                if btn_id == "prev_dict" or btn_id == "next_dict" then
-                    has_dict_nav = true
-                end
-                if pool[btn_id] then
-                    table.insert(new_row, pool[btn_id])
+                local button = pool[btn_id]
+                if button then
+                    if button.can_shrink and button.pairs_with then
+                        has_shrinkable_buttons = true
+                    end
+                    table.insert(new_row, button)
                 end
             end
             if #new_row > 0 then
@@ -917,38 +922,56 @@ function DictQuickLookup:buildButtonLayout()
             end
         end
 
-        if has_dict_nav then
-            -- Make prev/next_dict smaller when they share a 4-button row
+        -- Make shrinkable paired buttons smaller when they share a 4-button row.
+        if has_shrinkable_buttons then
             local frame_bordersize = Size.border.window
             local inner_width = self.width - 2 * frame_bordersize
             local buttons_width = inner_width - 2 * Size.padding.default
             local fifteen_percent = math.floor(buttons_width * 0.15)
-            for _, row in ipairs(buttons) do
-                local has_prev, has_next = false, false
+
+            local function btn_has_pair(btn, row_button_ids)
+                local pairs_with = btn.pairs_with
+                if type(pairs_with) == "table" then
+                    for _, id in ipairs(pairs_with) do
+                        if row_button_ids[id] then return true end
+                    end
+                    return false
+                end
+                return pairs_with and row_button_ids[pairs_with] == true
+            end
+
+            local function try_shrink_row(row)
+                if #row ~= 4 then return false end
+
+                local row_has_shrink_candidate = false
                 local has_custom_width = false
+                local row_button_ids = {}
                 for _, btn in ipairs(row) do
-                    if btn.id == "prev_dict" then
-                        has_prev = true
-                    elseif btn.id == "next_dict" then
-                        has_next = true
-                    elseif btn.width then
+                    row_button_ids[btn.id] = true
+                    if btn.width then
                         has_custom_width = true
+                    end
+                    if btn.can_shrink and btn.pairs_with then
+                        row_has_shrink_candidate = true
                     end
                 end
 
-                -- Both buttons are placed together, so finding either means this is the target row
-                if has_prev or has_next then
-                    if has_prev and has_next and #row == 4 and not has_custom_width then
-                        for _, btn in ipairs(row) do
-                            if btn.id == "prev_dict" or btn.id == "next_dict" then
-                                btn.width = fifteen_percent
-                            end
+                if not row_has_shrink_candidate then return false end
+
+                if not has_custom_width then
+                    for _, btn in ipairs(row) do
+                        if btn.can_shrink and btn_has_pair(btn, row_button_ids) then
+                            btn.width = fifteen_percent
                         end
                     end
-                    break -- We found a navigation button, no need to check other rows
                 end
-            end -- for loop
-        end -- has dict nav
+                return true
+            end
+
+            for _, row in ipairs(buttons) do
+                if try_shrink_row(row) then break end
+            end
+        end -- if has_shrinkable_buttons
     end -- if/else fullpage wiki
     return buttons
 end
