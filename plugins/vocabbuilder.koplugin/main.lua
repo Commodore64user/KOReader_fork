@@ -2017,6 +2017,7 @@ local VocabBuilder = WidgetContainer:extend{
 
 function VocabBuilder:init()
     self.ui.menu:registerToMainMenu(self)
+    self:registerDictButtonsToMenu()
     self:onDispatcherRegisterActions()
 end
 
@@ -2029,14 +2030,18 @@ function VocabBuilder:addToMainMenu(menu_items)
     }
 end
 
-function VocabBuilder:onDictRegisterButtonOptions(dict_popup, available_options, default_layout)
-    table.insert(available_options, 1, {
-        text = _("Vocabulary builder"), id = "vocabulary",
-    })
-    -- We must add the button to default_layout regardless of user config i.e., G__set("dict_button_config")
-    -- otherwise resetting to default won't account for our existence.
-    if default_layout then
-        table.insert(default_layout, 1, { "vocabulary" })
+function VocabBuilder:registerDictButtonsToMenu()
+    if self.ui and self.ui.dictionary then
+        self.ui.dictionary:addToDictButtonOptions("01_vocabulary", function(dict_popup, available_options, default_layout)
+            table.insert(available_options, 1, {
+                text = _("Vocabulary builder"), id = "vocabulary",
+            })
+            -- We must add the button to default_layout regardless of user config i.e., G_reader_settings("dict_button_config")
+            -- otherwise resetting to default won't account for our existence.
+            if default_layout then
+                table.insert(default_layout, 1, { "vocabulary" })
+            end
+        end)
     end
 end
 
@@ -2046,6 +2051,8 @@ function VocabBuilder:onDictRegisterButtons(dict_popup, pool, default_layout, ru
         return
     end
     if self.widget and self.widget.current_lookup_word == dict_popup.word then
+        -- We are calling from within the vocab builder, and the word is already
+        -- added to vocab builder, no need to add the button for review.
         return false
     end
     if dict_popup.is_wiki_fullpage then

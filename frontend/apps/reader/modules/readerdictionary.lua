@@ -104,6 +104,7 @@ end
 
 function ReaderDictionary:init()
     self:registerKeyEvents()
+    self._dict_button_options = {}
 
     self.disable_lookup_history = G_reader_settings:isTrue("disable_lookup_history")
     self.dicts_order = G_reader_settings:readSetting("dicts_order", {})
@@ -227,6 +228,13 @@ function ReaderDictionary:updateSdcvDictNamesOptions()
             table.insert(self.enabled_dict_names, ifo.name)
         end
     end
+end
+
+function ReaderDictionary:addToDictButtonOptions(idx, fn_option)
+    -- fn_option is a function that takes the ReaderDictionary instance
+    -- and the (available_options, default_layout) tables to mutate.
+    -- i.e., function(self, available_options, default_layout) ... end
+    self._dict_button_options[idx] = fn_option
 end
 
 function ReaderDictionary:addToMainMenu(menu_items)
@@ -500,8 +508,9 @@ function ReaderDictionary:_genCustomizeButtonsMenu()
         { "prev_dict", "highlight", "next_dict" },
         { "wikipedia",    "search",     "close" },
     }
-    if self.ui then
-        self.ui:handleEvent(Event:new("DictRegisterButtonOptions", self, available_options, default_layout))
+    for idx, fn_option in ffiUtil.orderedPairs(self._dict_button_options) do
+        fn_option(self, available_options, default_layout)
+        logger.dbg("ReaderDictionary", idx..": registered to custom button menu")
     end
     if Device:hasDPad() then
         table.insert(available_options, { text = _("Text selection"), id = "text_selection" })

@@ -11,27 +11,31 @@ function MyPlugin:onDictRegisterButtons(dict_popup, pool, default_layout, extra_
     -- 1. Create a custom button in the shared button pool
     pool.my_custom_action = IconButton:new{
         id = "my_custom_action",
-        icon = "my_icon",
+        text = _("Action name"),
         callback = function() -- Do something end
     }
 
     -- 2. Add an extra row (a table containing string IDs matching the pool keys)
-    --    You can either to default_layout or extra_layout, but keep in mind users
-    --    have the final say on the default_layout.
+    --    You can either insert to default_layout or extra_layout, but keep in mind users
+    --    have the final say on the final layout.
     table.insert(extra_layout, { "my_custom_action" })
 end
 
--- 3. If your button is not transient, you must also register it to the top menu
---    through the event `onDictRegisterButtonOptions`.
+### Integration Hooks (ReaderDictionary):
+Plugins can register customizable dictionary buttons to the top menu via
+`ReaderDictionary:addToDictButtonOptions`.
 
-function MyPlugin:onDictRegisterButtonOptions(dict_popup, available_options, default_layout)
-    -- 1. Register the display text and string ID of the custom button
-    -- so the menu knows it exists.
-    table.insert(available_options, { "my_custom_action", _("My Custom Action") })
+-- If your buttons aren't transient, you must use this hook to add them to the
+-- sortWidget in the top menu, otherwise they won't be available to the user.
 
-    -- 2. If it is meant to appear by default before the user configures their layout,
-    -- add the ID into the nested default_layout table alongside the standard buttons
-    table.insert(default_layout, "my_custom_action")
+@usage
+function MyPlugin:init()
+    if self.ui and self.ui.dictionary then
+        self.ui.dictionary:addToDictButtonOptions("10_my_custom_action", function(dict, available_options, default_layout)
+            table.insert(available_options, { text = _("My Custom Action"), id = "my_custom_action" })
+            table.insert(default_layout, { "my_custom_action" })
+        end)
+    end
 end
 ]]
 
@@ -638,8 +642,11 @@ function DictQuickLookup:isDocless()
 end
 
 function DictQuickLookup:_getButtonPool()
-    local prev_dict_text = BD.mirroredUILayout() and "▷▷" or "◁◁"
-    local next_dict_text = BD.mirroredUILayout() and "◁◁" or "▷▷"
+    local prev_dict_text = "◁◁"
+    local next_dict_text = "▷▷"
+    if BD.mirroredUILayout() then
+        prev_dict_text, next_dict_text = next_dict_text, prev_dict_text
+    end
 
     local pool = {
         save = {
