@@ -5,6 +5,12 @@ to allow plugins to dynamically register their own buttons into the dictionary U
 ### Integration Hooks:
 Plugins can handle the `DictRegisterButtons` event by implementing `onDictRegisterButtons`.
 
+-- Note: `default_layout` refers to the order of buttons a user would encounter on a fresh install,
+--       these buttons can then be moved around by users using the dedicated UI.
+--       `extra_layout` or transient buttons on the other hand, are added when the need arises,
+--       users don't need to know of their existance and are not modifiable by users.
+--       See an example in use for both in the Vocabulary builder plugin.
+
 @usage
 -- Example from a plugin:
 function MyPlugin:onDictRegisterButtons(dict_popup, pool, default_layout, extra_layout)

@@ -514,11 +514,12 @@ function ReaderDictionary:_genCustomizeButtonsMenu()
     end
     if Device:hasDPad() then
         table.insert(available_options, { text = _("Text selection"), id = "text_selection" })
-        if default_layout and Device:hasFewKeys() then
+        if  Device:hasFewKeys() then
             table.insert(default_layout, {"text_selection"})
         end
     end
 
+    -- This function return the config from settings.
     local function getDictConfig()
         local config = util.tableDeepCopy(G_reader_settings:readSetting("dict_button_config"))
         if not config then
@@ -553,6 +554,7 @@ function ReaderDictionary:_genCustomizeButtonsMenu()
         return config
     end
 
+    -- This helper regenerates the layout based on the given config, and saves it in settings.
     local function regenLayout(override_config, override_selected)
         local config = override_config or getDictConfig()
 
@@ -596,7 +598,8 @@ function ReaderDictionary:_genCustomizeButtonsMenu()
         G_reader_settings:saveSetting("dict_button_config", config)
     end
 
-    local function rebuildRowMenu() end
+    local rebuildRowMenu -- forward declaration for recursive use in genRowMenu
+    -- This function generates dynamically the row submenu, according to the current config.
     local function genRowMenu()
         local config = getDictConfig()
         local layout_rows = config.layout
@@ -622,9 +625,28 @@ function ReaderDictionary:_genCustomizeButtonsMenu()
                         end,
                     })
                 end,
+                separator = i == #layout_rows,
             })
         end
+
+        table.insert(customize_buttons_menu, {
+            text = _("Test layout"),
+            keep_menu_open = true,
+            callback = function()
+                local preview_word = "lorem"
+                local preview_definition = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. " .. _("This is only a fake definition to preview dictionary button positions.")
+                self:showDict(preview_word, {
+                    {
+                        dict = _("Layout preview"),
+                        word = preview_word,
+                        definition = preview_definition,
+                    },
+                })
+            end,
+        })
     end
+
+    -- This rebuillds the row menu based on changes in the layout.
     local row_menu_start_idx = #customize_buttons_menu + 1
     function rebuildRowMenu()
         while #customize_buttons_menu >= row_menu_start_idx do
