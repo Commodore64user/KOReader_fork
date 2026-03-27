@@ -29,7 +29,7 @@ end
 
 ### Integration Hooks (ReaderDictionary):
 Plugins can register customizable dictionary buttons to the top menu via
-`ReaderDictionary:addToDictButtonOptions`.
+`ReaderDictionary:addToDictMenuButtons`.
 
 -- If your buttons aren't transient, you must use this hook to add them to the
 -- sortWidget in the top menu, otherwise they won't be available to the user.
@@ -37,7 +37,7 @@ Plugins can register customizable dictionary buttons to the top menu via
 @usage
 function MyPlugin:init()
     if self.ui and self.ui.dictionary then
-        self.ui.dictionary:addToDictButtonOptions("10_my_custom_action", function(dict, available_options, default_layout)
+        self.ui.dictionary:addToDictMenuButtons("10_my_custom_action", function(dict, available_options, default_layout)
             table.insert(available_options, { text = _("My Custom Action"), id = "my_custom_action" })
             table.insert(default_layout, { "my_custom_action" })
         end)
@@ -902,6 +902,24 @@ function DictQuickLookup:buildButtonLayout()
             button_layout = config and util.tableDeepCopy(config.layout) or default_layout
         end
 
+        local frame_bordersize = Size.border.window
+        local inner_width = self.width - 2 * frame_bordersize
+        local buttons_width = inner_width - 2 * Size.padding.default
+
+        local function applyAutoRowStyle(row)
+            local row_size = #row
+            if row_size == 0 then return end
+            for _, btn in ipairs(row) do
+                local auto = btn.auto_row_style
+                if auto then
+                    local width_min_row_size = auto.width_min_row_size or 1
+                    if auto.width_ratio and row_size >= width_min_row_size and not btn.width then
+                        btn.width = math.floor(buttons_width * auto.width_ratio)
+                    end
+                end
+            end
+        end
+
         for _, extra_row in ipairs(extra_layout) do
             table.insert(button_layout, extra_row)
         end
@@ -918,15 +936,13 @@ function DictQuickLookup:buildButtonLayout()
                 end
             end
             if #new_row > 0 then
+                applyAutoRowStyle(new_row)
                 table.insert(buttons, new_row)
             end
         end
 
         -- Make shrinkable paired buttons smaller when they share a 4-button row.
         if has_shrinkable_buttons then
-            local frame_bordersize = Size.border.window
-            local inner_width = self.width - 2 * frame_bordersize
-            local buttons_width = inner_width - 2 * Size.padding.default
             local fifteen_percent = math.floor(buttons_width * 0.15)
 
             local function btn_has_pair(btn, row_button_ids)

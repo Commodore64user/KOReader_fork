@@ -230,7 +230,7 @@ function ReaderDictionary:updateSdcvDictNamesOptions()
     end
 end
 
-function ReaderDictionary:addToDictButtonOptions(idx, fn_option)
+function ReaderDictionary:addToDictMenuButtons(idx, fn_option)
     -- fn_option is a function that takes the ReaderDictionary instance
     -- and the (available_options, default_layout) tables to mutate.
     -- i.e., function(self, available_options, default_layout) ... end

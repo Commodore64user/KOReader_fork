@@ -2032,7 +2032,7 @@ end
 
 function VocabBuilder:registerDictButtonsToMenu()
     if self.ui and self.ui.dictionary then
-        self.ui.dictionary:addToDictButtonOptions("01_vocabulary", function(dict_popup, available_options, default_layout)
+        self.ui.dictionary:addToDictMenuButtons("01_vocabulary", function(dict_popup, available_options, default_layout)
             table.insert(available_options, 1, {
                 text = _("Vocabulary builder"), id = "vocabulary",
             })
@@ -2059,34 +2059,15 @@ function VocabBuilder:onDictRegisterButtons(dict_popup, pool, default_layout, ru
         return
     end
     local is_adding = true
-    local config = G_reader_settings:readSetting("dict_button_config")
-    local layout = config and config.layout
-
-    local row_count = 1
-    if layout then
-        for _, row in ipairs(layout) do
-            for _, id in ipairs(row) do
-                if id == "vocabulary" then
-                    row_count = #row
-                    break
-                end
-            end
-        end
-    end
-
-    local vocabulary_width = nil
-    if row_count > 2 then
-        local table_width = dict_popup.width - 2 * Size.border.window - 2 * Size.padding.default
-        local separators = Size.line.medium * (row_count - 1)
-        local usable_width = table_width - separators
-        vocabulary_width = math.floor(usable_width * 0.7)
-    end
 
     pool.vocabulary = {
         id = "vocabulary",
         text = _("Add to vocabulary builder"),
-        width = vocabulary_width,
-        font_bold = row_count > 1,
+        font_bold = false,
+        auto_row_style = {
+            width_min_row_size = 2,
+            width_ratio = 0.7,
+        },
         callback = function()
             local button = dict_popup.button_table.button_by_id["vocabulary"]
             if not button then return end
