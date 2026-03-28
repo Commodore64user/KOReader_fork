@@ -231,6 +231,10 @@ function FileChooser:genItemTableFromPath(path)
     return self:genItemTable(dirs, files, path)
 end
 
+function FileChooser:isHomeFolderLockActive()
+    return not self.ignore_home_folder_lock and G_reader_settings:isTrue("lock_home_folder")
+end
+
 function FileChooser:genItemTable(dirs, files, path)
     local collate = self:getCollate()
     local collate_mixed = G_reader_settings:isTrue("collate_mixed")
@@ -253,7 +257,7 @@ function FileChooser:genItemTable(dirs, files, path)
     end
 
     if path then -- file browser or PathChooser
-        if path ~= "/" and not (G_reader_settings:isTrue("lock_home_folder") and
+        if path ~= "/" and not (self:isHomeFolderLockActive() and
                                 path == G_reader_settings:readSetting("home_dir")) then
             table.insert(item_table, 1, {
                 text = BD.mirroredUILayout() and BD.ltr("../ ⬆") or "⬆ ../",
@@ -372,7 +376,7 @@ function FileChooser:goHome()
 end
 
 function FileChooser:onFolderUp()
-    if not (G_reader_settings:isTrue("lock_home_folder") and
+    if not (self:isHomeFolderLockActive() and
             self.path == G_reader_settings:readSetting("home_dir")) then
         self:changeToPath(string.format("%s/..", self.path), self.path)
     end

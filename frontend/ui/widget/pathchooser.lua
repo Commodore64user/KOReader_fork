@@ -14,6 +14,7 @@ local PathChooser = FileChooser:extend{
     title = true, -- or a string
         -- if let to true, a generic title will be set in init()
     no_title = false,
+    ignore_home_folder_lock = true,
     select_directory = true, -- allow selecting directories
     select_file = true,      -- allow selecting files
     show_files = true, -- show files, even if select_file=false
