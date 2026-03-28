@@ -24,6 +24,7 @@ local FileChooser = BookList:extend{
     show_hidden      = G_reader_settings:readSetting("show_hidden", false), -- folders/files starting with "."
     show_unsupported = G_reader_settings:readSetting("show_unsupported", false), -- set to true to ignore file_filter
     file_filter = nil, -- function defined in the caller, returns true for files to be shown
+    ignore_home_folder_lock = false, -- if true, home folder lock has no effect in FileChooser (e.g., PathChooser)
     -- NOTE: Input is *always* a relative entry name
     exclude_dirs = { -- const
         -- KOReader / Kindle
