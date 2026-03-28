@@ -853,6 +853,7 @@ function DictQuickLookup:_getButtonPool()
         link = {
             id = "link",
             text = _("Follow Link"),
+            require_link = true,
             callback = function()
                 local link = self.selected_link.link or self.selected_link
                 self.ui.link:onGotoLink(link)
@@ -882,9 +883,13 @@ function DictQuickLookup:buildButtonLayout()
         table.insert(default_layout, { "text_selection" })
     end
     if not self.is_wiki and self.selected_link ~= nil then
-        -- If highlighting a word, which is part of a link (should be rare),
+        -- If selecting a word, which is part of a link (should be rare),
         -- append a new row with a single button to follow this link.
-        table.insert(extra_layout, { "link" })
+        for _, button in pairs(pool) do
+            if button.require_link then
+                table.insert(extra_layout, { button.id })
+            end
+        end
     end
 
     if self.is_wiki_fullpage then
