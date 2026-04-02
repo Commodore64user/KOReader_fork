@@ -1,46 +1,121 @@
 --[[--
-This module renders the dictionary popup. It emits an event during initialization
-to allow plugins to dynamically register their own buttons into the dictionary UI.
+This module renders the dictionary widget.
 
-### Integration Hooks:
-Plugins can handle the `DictRegisterButtons` event by implementing `onDictRegisterButtons`.
+## Dictionary button extension API (for plugins)
 
--- Note: `default_layout` refers to the order of buttons a user would encounter on a fresh install,
---       these buttons can then be moved around by users using the dedicated UI.
---       `extra_layout` or transient buttons on the other hand, are added when the need arises,
---       users don't need to know of their existance and are not modifiable by users.
---       See an example in use for both in the Vocabulary builder plugin.
+Plugins can extend dictionary popup buttons via:
+
+`ReaderDictionary:addToDictButtons(spec)`
+
+Specs are consumed in two places:
+1. ReaderDictionary customize menu generation.
+2. DictQuickLookup runtime button pool + layout assembly.
+
+There is one unified spec model for both persistent and transient actions.
+
+### Registration lifecycle
+
+- Register once (typically in plugin init) when `self.ui.dictionary` exists.
+- Specs are stored by id; ids must be unique.
+- Popup instances are created later; callbacks run per popup instance.
+
+### Spec fields
+
+Required:
+- `id` (string): unique key used in config/layout/button lookup.
+
+Labels:
+- `menu_text` (string): entry label in "Customize buttons" selector (non-conditional only).
+- `text` (string): static runtime button label.
+- `text_func` (function(dict_popup) -> string): dynamic runtime label.
+
+Visibility and enabled state:
+- `show_func` (function(dict_popup) -> bool): runtime visibility gate (default true).
+- `enabled` (bool): static enabled state.
+- `enable_func` (function(dict_popup) -> bool): dynamic enabled state (takes precedence over `enabled`).
+
+Actions:
+- `callback` (function(dict_popup)): tap action.
+- `hold_callback` (function(dict_popup)): long-press action.
+
+Layout and style:
+- `conditional` (bool): runtime-only transient button/row if true.
+- `early_bird` (bool): non-conditional auto insertion at top of default layout.
+- `row_group` (string): group conditional buttons into same transient row.
+- `pairs_with` (string|string[]): pairing hint used in row grouping.
+- `can_shrink` (bool): allow width shrink in 4-button rows when paired.
+- `auto_row_style` (table): auto width rules; supports `width_min_row_size` and `width_ratio`.
+- `font_bold` (bool): bold label.
+- `vsync` (bool): propagated to button entry.
+- `require_link` (bool): transient row insertion only when selected link exists.
+
+### Persistent vs transient behavior
+
+Non-conditional (`conditional ~= true`):
+- Can appear in Customize buttons menu when `menu_text` is provided.
+- Can be toggled/sorted by users through dictionary button customization.
+- On fresh installs (no `dict_button_config`), can be auto-added to `default_layout`.
+
+Conditional or transient (`conditional == true`):
+- Runtime-only, appended via `extra_layout`.
+- Not user-toggleable in persistent customization.
+- Usually used for context-dependent actions (review buttons, link-dependent actions, etc).
+
+### Conditional row grouping rules
+
+- If `row_group` is shared, buttons join one transient row.
+- Else, if `pairs_with` is present, an implicit deterministic pair row key is derived.
+- Else, each conditional button becomes its own transient row.
+
+### Runtime layout pipeline
+
+At popup build time (`buildButtonLayout`):
+1. Built-in buttons are created (`_getButtonPool`).
+2. Base layout is selected (default/config/wiki variants).
+3. ReaderDictionary injects plugin buttons into pool/layout.
+4. Transient `extra_layout` rows are appended.
+5. Row styling/shrink logic is applied.
+
+### Ordering
+
+Registered specs are iterated with `ffiUtil.orderedPairs` (alphabetical by key).
+This gives deterministic order for:
+- default insertion,
+- conditional row key discovery,
+- and final row composition.
+
+### State management across multiple popups
+
+Do not use one shared boolean for mutable button state across callbacks.
+The same registered callback may serve multiple popup instances.
+
+Use weak-key per-popup state:
+
+```lua
+local state_by_popup = setmetatable({}, { __mode = "k" })
+```
+
+This keeps state isolated per popup and allows garbage collection when popups close.
 
 @usage
--- Example from a plugin:
-function MyPlugin:onDictRegisterButtons(dict_popup, pool, default_layout, extra_layout)
-    -- 1. Create a custom button in the shared button pool
-    pool.my_custom_action = IconButton:new{
-        id = "my_custom_action",
-        text = _("Action name"),
-        callback = function() -- Do something end
-    }
-
-    -- 2. Add an extra row (a table containing string IDs matching the pool keys)
-    --    You can either insert to default_layout or extra_layout, but keep in mind users
-    --    have the final say on the final layout.
-    table.insert(extra_layout, { "my_custom_action" })
-end
-
-### Integration Hooks (ReaderDictionary):
-Plugins can register customizable dictionary buttons to the top menu via
-`ReaderDictionary:addToDictMenuButtons`.
-
--- If your buttons aren't transient, you must use this hook to add them to the
--- sortWidget in the top menu, otherwise they won't be available to the user.
-
-@usage
-function MyPlugin:init()
+function MyPlugin:registerDictButtons()
     if self.ui and self.ui.dictionary then
-        self.ui.dictionary:addToDictMenuButtons("10_my_custom_action", function(dict, available_options, default_layout)
-            table.insert(available_options, { text = _("My Custom Action"), id = "my_custom_action" })
-            table.insert(default_layout, { "my_custom_action" })
-        end)
+        local state_by_popup = setmetatable({}, { __mode = "k" })
+        self.ui.dictionary:addToDictButtons{
+            id = "my_custom_action",
+            menu_text = _("My custom action"),
+            text_func = function(dict_popup)
+                return state_by_popup[dict_popup] and _("Disable action") or _("Enable action")
+            end,
+            early_bird = true,
+            show_func = function(dict_popup)
+                return true -- or some condition based on dict_popup
+            end,
+            callback = function(dict_popup)
+                local current = state_by_popup[dict_popup] == true
+                state_by_popup[dict_popup] = not current
+            end,
+        }
     end
 end
 ]]
@@ -875,12 +950,8 @@ function DictQuickLookup:buildButtonLayout()
         }
     end
     local extra_layout = {} -- transient buttons.
-    -- Let plugins register their own buttons into the pool
-    if self.ui then
-        self.ui:handleEvent(Event:new("DictRegisterButtons", self, pool, default_layout, extra_layout))
-    end
     if default_layout and self.allow_key_text_selection and Device:hasFewKeys() then
-        table.insert(default_layout, { "text_selection" })
+        table.insert(default_layout, 1, { "text_selection" })
     end
     if not self.is_wiki and self.selected_link ~= nil then
         -- If selecting a word, which is part of a link (should be rare),
@@ -891,10 +962,13 @@ function DictQuickLookup:buildButtonLayout()
             end
         end
     end
+    if self.ui and self.ui.dictionary then
+        self.ui.dictionary:populateDictQuickButtons(self, pool, default_layout, extra_layout)
+    end
 
     if self.is_wiki_fullpage then
         -- Wiki fullpage has a fixed, non-configurable layout
-        buttons = { { pool.save, pool.close } }
+        return { { pool.save, pool.close } }
     else
         local button_layout
         -- Wiki has a fixed, non-configurable layout (yet!)

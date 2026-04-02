@@ -104,7 +104,7 @@ end
 
 function ReaderDictionary:init()
     self:registerKeyEvents()
-    self._dict_button_options = {}
+    self._dict_buttons = {}
 
     self.disable_lookup_history = G_reader_settings:isTrue("disable_lookup_history")
     self.dicts_order = G_reader_settings:readSetting("dicts_order", {})
@@ -180,6 +180,122 @@ function ReaderDictionary:init()
     }
 end
 
+-- Checks whether a given id is already present inside a layout table.
+local function _layoutContainsButtonId(layout, button_id)
+    if not layout then return false end
+    for _, row in ipairs(layout) do
+        for _, id in ipairs(row) do
+            if id == button_id then
+                return true
+            end
+        end
+    end
+    return false
+end
+
+function ReaderDictionary:addToDictButtons(spec)
+    if type(spec) ~= "table" or type(spec.id) ~= "string" then
+        logger.warn("ReaderDictionary: addToDictButtons expects a table with a string 'id'")
+        return
+    end
+    self._dict_buttons[spec.id] = spec
+end
+
+function ReaderDictionary:_registerDictButtonsToCustomMenu(available_options, default_layout)
+    local seen = {}
+    for _, opt in ipairs(available_options) do
+        seen[opt.id] = true
+    end
+    for id, spec in ffiUtil.orderedPairs(self._dict_buttons) do
+        if not spec.conditional and spec.menu_text and not seen[spec.id] then
+            table.insert(available_options, { text = spec.menu_text, id = spec.id })
+            seen[spec.id] = true
+        end
+        if not spec.conditional and default_layout and not _layoutContainsButtonId(default_layout, spec.id) then
+            local i = spec.early_bird and 1 or (#default_layout + 1)
+            table.insert(default_layout, i, { spec.id })
+        end
+        logger.dbg("ReaderDictionary", id..": registered dict button spec")
+    end
+end
+
+function ReaderDictionary:populateDictQuickButtons(dict_popup, pool, default_layout, extra_layout)
+    local conditional_rows = {}
+    local conditional_row_order = {}
+
+    local function add_conditional_button(row_key, button_id)
+        local row = conditional_rows[row_key]
+        if not row then
+            row = {}
+            conditional_rows[row_key] = row
+            table.insert(conditional_row_order, row_key)
+        end
+        for _, existing in ipairs(row) do
+            if existing == button_id then
+                return
+            end
+        end
+        table.insert(row, button_id)
+    end
+
+    for id, spec in ffiUtil.orderedPairs(self._dict_buttons) do
+        local show = true
+        if spec.show_func then
+            show = spec.show_func(dict_popup)
+        end
+        if show then
+            local button = {
+                id = spec.id,
+                text = spec.text,
+                text_func = spec.text_func,
+                font_bold = spec.font_bold,
+                auto_row_style = spec.auto_row_style,
+                width = spec.width,
+                vsync = spec.vsync,
+                pairs_with = spec.pairs_with,
+                can_shrink = spec.can_shrink,
+                require_link = spec.require_link,
+                callback = spec.callback and function()
+                    return spec.callback(dict_popup)
+                end,
+                hold_callback = spec.hold_callback and function()
+                    return spec.hold_callback(dict_popup)
+                end,
+            }
+            if spec.enable_func then
+                button.enabled = spec.enable_func(dict_popup)
+            elseif spec.enabled ~= nil then
+                button.enabled = spec.enabled
+            end
+
+            pool[spec.id] = button
+
+            if spec.conditional then
+                local row_key = spec.row_group
+                if not row_key and spec.pairs_with then
+                    local left, right = spec.id, spec.pairs_with
+                    if left > right then
+                        left, right = right, left
+                    end
+                    row_key = "pair:" .. left .. "|" .. right
+                end
+                add_conditional_button(row_key or spec.id, spec.id)
+            elseif default_layout and not _layoutContainsButtonId(default_layout, spec.id) then
+                local i = spec.early_bird and 1 or (#default_layout + 1)
+                table.insert(default_layout, i, { spec.id })
+            end
+            logger.dbg("ReaderDictionary", id..": populated dict quick button")
+        end
+    end
+
+    for _, row_key in ipairs(conditional_row_order) do
+        local row = conditional_rows[row_key]
+        if #row > 0 then
+            table.insert(extra_layout, row)
+        end
+    end
+end
+
 function ReaderDictionary:registerKeyEvents()
     if Device:hasKeyboard() then
         self.key_events.ShowDictionaryLookup = { { "Alt", "D" }, { "Ctrl", "D" } }
@@ -228,13 +344,6 @@ function ReaderDictionary:updateSdcvDictNamesOptions()
             table.insert(self.enabled_dict_names, ifo.name)
         end
     end
-end
-
-function ReaderDictionary:addToDictMenuButtons(idx, fn_option)
-    -- fn_option is a function that takes the ReaderDictionary instance
-    -- and the (available_options, default_layout) tables to mutate.
-    -- i.e., function(self, available_options, default_layout) ... end
-    self._dict_button_options[idx] = fn_option
 end
 
 function ReaderDictionary:addToMainMenu(menu_items)
@@ -508,16 +617,13 @@ function ReaderDictionary:_genCustomizeButtonsMenu()
         { "prev_dict", "highlight", "next_dict" },
         { "wikipedia",    "search",     "close" },
     }
-    for idx, fn_option in ffiUtil.orderedPairs(self._dict_button_options) do
-        fn_option(self, available_options, default_layout)
-        logger.dbg("ReaderDictionary", idx..": registered to custom button menu")
-    end
     if Device:hasDPad() then
         table.insert(available_options, { text = _("Text selection"), id = "text_selection" })
         if  Device:hasFewKeys() then
-            table.insert(default_layout, {"text_selection"})
+            table.insert(default_layout, 1, {"text_selection"})
         end
     end
+    self:_registerDictButtonsToCustomMenu(available_options, default_layout)
 
     -- This function return the config from settings.
     local function getDictConfig()
@@ -630,11 +736,13 @@ function ReaderDictionary:_genCustomizeButtonsMenu()
         end
 
         table.insert(customize_buttons_menu, {
-            text = _("Test layout"),
+            text = _("Test button layout"),
             keep_menu_open = true,
             callback = function()
                 local preview_word = "lorem"
-                local preview_definition = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. " .. _("This is only a fake definition to preview dictionary button positions.")
+                local preview_definition = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. " ..
+                _("This is a mock definition used to preview dictionary button positions.") .. "\n\n" ..
+                _("Tip: Place the Previous/Next buttons in the same row with two other buttons (4 total) to make them shrink and save space.")
                 self:showDict(preview_word, {
                     {
                         dict = _("Layout preview"),
