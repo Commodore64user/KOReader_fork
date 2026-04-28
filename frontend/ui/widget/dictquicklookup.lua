@@ -40,7 +40,7 @@ Actions:
 
 Layout and style:
 - `conditional` (bool): runtime-only transient button/row if true.
-- `insert_first` (bool): non-conditional auto insertion at top of default layout.
+- `early_bird` (bool): non-conditional auto insertion at top of default layout.
 - `row_group` (string): group conditional buttons into same transient row.
 - `pairs_with` (string|string[]): pairing hint used in row grouping.
 - `can_shrink` (bool): allow width shrink in 4-button rows when paired.
@@ -101,13 +101,13 @@ This keeps state isolated per popup and allows garbage collection when popups cl
 function MyPlugin:registerDictButtons()
     if self.ui and self.ui.dictionary then
         local state_by_popup = setmetatable({}, { __mode = "k" })
-        self.ui.dictionary:addToDictButtons({
+        self.ui.dictionary:addToDictButtons{
             id = "my_custom_action",
             menu_text = _("My custom action"),
             text_func = function(dict_popup)
                 return state_by_popup[dict_popup] and _("Disable action") or _("Enable action")
             end,
-            insert_first = true,
+            early_bird = true,
             show_func = function(dict_popup)
                 return true -- or some condition based on dict_popup
             end,
@@ -115,7 +115,7 @@ function MyPlugin:registerDictButtons()
                 local current = state_by_popup[dict_popup] == true
                 state_by_popup[dict_popup] = not current
             end,
-        })
+        }
     end
 end
 ]]

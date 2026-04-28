@@ -1986,7 +1986,7 @@ local VocabBuilder = WidgetContainer:extend{
 
 function VocabBuilder:init()
     self.ui.menu:registerToMainMenu(self)
-    self:registerDictButtons()
+    self:registerDictButtonsToWidget()
     self:onDispatcherRegisterActions()
 end
 
@@ -1999,15 +1999,15 @@ function VocabBuilder:addToMainMenu(menu_items)
     }
 end
 
-function VocabBuilder:registerDictButtons()
+function VocabBuilder:registerDictButtonsToWidget()
     if not (self.ui and self.ui.dictionary) then return end
     -- use weak table to track the state of add/remove, simple bool will fail here.
     local action_state_by_popup = setmetatable({}, { __mode = "k" })
-    self.ui.dictionary:addToDictButtons({
+    self.ui.dictionary:addToDictButtons{
         id = "vocabulary",
         menu_text = _("Vocabulary builder"),
         text = _("Add to vocabulary builder"),
-        insert_first = true,
+        early_bird = true,
         font_bold = false,
         auto_row_style = {
             width_min_row_size = 2,
@@ -2057,7 +2057,7 @@ function VocabBuilder:registerDictButtons()
                 })
             end
         end,
-    })
+    }
     local function getCurrentVocabItem(dict_popup)
         if not self.widget then
             return nil
@@ -2069,7 +2069,7 @@ function VocabBuilder:registerDictButtons()
         end
         return nil
     end
-    self.ui.dictionary:addToDictButtons({
+    self.ui.dictionary:addToDictButtons{
         id = "forgot",
         text = _("Forgot"),
         conditional = true,
@@ -2085,8 +2085,8 @@ function VocabBuilder:registerDictButtons()
             self.widget:forgotFromDict(item.word)
             dict_popup:onClose()
         end,
-    })
-    self.ui.dictionary:addToDictButtons({
+    }
+    self.ui.dictionary:addToDictButtons{
         id = "got_it",
         text = _("Got it"),
         conditional = true,
@@ -2102,7 +2102,7 @@ function VocabBuilder:registerDictButtons()
             self.widget:gotItFromDict(item.word)
             dict_popup:onClose()
         end,
-    })
+    }
 end
 
 function VocabBuilder:onDispatcherRegisterActions()

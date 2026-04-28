@@ -212,7 +212,7 @@ function ReaderDictionary:_registerDictButtonsToCustomMenu(available_options, de
             seen[spec.id] = true
         end
         if not spec.conditional and default_layout and not _layoutContainsButtonId(default_layout, spec.id) then
-            local i = spec.insert_first and 1 or (#default_layout + 1)
+            local i = spec.early_bird and 1 or (#default_layout + 1)
             table.insert(default_layout, i, { spec.id })
         end
         logger.dbg("ReaderDictionary", id..": registered dict button spec")
@@ -281,7 +281,7 @@ function ReaderDictionary:populateDictQuickButtons(dict_popup, pool, default_lay
                 end
                 add_conditional_button(row_key or spec.id, spec.id)
             elseif default_layout and not _layoutContainsButtonId(default_layout, spec.id) then
-                local i = spec.insert_first and 1 or (#default_layout + 1)
+                local i = spec.early_bird and 1 or (#default_layout + 1)
                 table.insert(default_layout, i, { spec.id })
             end
             logger.dbg("ReaderDictionary", id..": populated dict quick button")
