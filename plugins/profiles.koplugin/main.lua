@@ -22,41 +22,43 @@ local autostart_done
 local Profiles = WidgetContainer:extend{
     name = "profiles",
     prefix = "profile_exec_",
-    settings_file = DataStorage:getSettingsDir() .. "/profiles.lua",
-    data = nil, -- direct access to the settings table
-    updated = nil,
+    profiles_file = DataStorage:getSettingsDir() .. "/profiles.lua",
+    profiles = nil,
+    data = nil,
+    updated = false,
 }
 
 function Profiles:init()
     Dispatcher:init()
     self.autoexec = G_reader_settings:readSetting("profiles_autoexec", {})
     self.ui.menu:registerToMainMenu(self)
-    self:onDispatcherRegisterActions() -- will call loadSettings()
+    self:onDispatcherRegisterActions()
     self:onStart()
 end
 
-function Profiles:loadSettings()
-    if not Profiles.settings then
-        Profiles.settings = LuaSettings:open(self.settings_file)
-        if not next(Profiles.settings.data) then
-            self.updated = true -- first run, force flush
+function Profiles:loadProfiles()
+    if self.profiles then
+        return
+    end
+    self.profiles = LuaSettings:open(self.profiles_file)
+    self.data = self.profiles.data
+    -- ensure profile name
+    for k, v in pairs(self.data) do
+        if not v.settings then
+            v.settings = {}
         end
-        -- ensure profile name
-        for k, v in pairs(Profiles.settings.data) do
-            v.settings = v.settings or {}
-            if not v.settings.name then
-                v.settings.name = k
-                self.updated = true
-            end
+        if not v.settings.name then
+            v.settings.name = k
+            self.updated = true
         end
     end
-    self.data = Profiles.settings.data
+    self:onFlushSettings()
 end
 
 function Profiles:onFlushSettings()
-    if self.updated then
-        Profiles.settings:flush()
-        self.updated = nil
+    if self.profiles and self.updated then
+        self.profiles:flush()
+        self.updated = false
     end
 end
 
@@ -70,7 +72,7 @@ local function dispatcherUnregisterProfile(name)
 end
 
 function Profiles:onDispatcherRegisterActions()
-    self:loadSettings()
+    self:loadProfiles()
     for k, v in pairs(self.data) do
         if v.settings.registered then
             dispatcherRegisterProfile(k)
@@ -88,6 +90,7 @@ function Profiles:addToMainMenu(menu_items)
 end
 
 function Profiles:getSubMenuItems()
+    self:loadProfiles()
     local sub_item_table = {
         {
             text = _("New"),

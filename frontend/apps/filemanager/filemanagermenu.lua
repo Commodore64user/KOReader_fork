@@ -66,7 +66,9 @@ function FileManagerMenu:registerKeyEvents()
         if Device:hasFewKeys() then
             self.key_events.KeyPressShowMenu = { { { "Menu", "Right" } } }
         end
-        -- OpenLastDoc = { { "ScreenKB", "Back" } } handled by hotkeys
+        if Device:hasScreenKB() then
+            self.key_events.OpenLastDoc = { { "ScreenKB", "Back" } }
+        end
     end
 end
 
@@ -475,7 +477,7 @@ To:
         text = _("Folders and files mixed"),
         enabled_func = function()
             local collate = FileChooser:getCollate()
-            return collate.can_collate_mixed or false
+            return collate.can_collate_mixed
         end,
         checked_func = function()
             local collate = FileChooser:getCollate()

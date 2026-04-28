@@ -64,9 +64,8 @@ end
 function load_plugin(name)
     local PluginLoader = require("pluginloader")
     local t = PluginLoader:_discover()
-    local plugin_id = name:gsub("%.koplugin$", "")
     for _, v in ipairs(t) do
-        if v.name == plugin_id then
+        if v.name == name then
             PluginLoader:_load{v}
             return
         end

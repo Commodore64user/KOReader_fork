@@ -1,5 +1,6 @@
 local _ = require("gettext")
 return {
+    name = "japanese",
     fullname = _("Japanese support"),
     description = _([[
 Japanese language support for KOReader, modeled after Yomichan.

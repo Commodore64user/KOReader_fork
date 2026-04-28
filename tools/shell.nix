@@ -19,7 +19,6 @@ pkgs.mkShell {
     ninja
     perl
     pkg-config
-    python3
     sdl3
     unzip
     wget

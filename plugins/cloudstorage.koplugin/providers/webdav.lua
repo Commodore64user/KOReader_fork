@@ -58,9 +58,6 @@ function WebDavApi.listFolder(address, user, pass, folder_path, include_folders)
     if webdav_url:sub(-1) ~= "/" then
         webdav_url = webdav_url .. "/"
     end
-    -- Used to detect the "current folder" item.
-    -- The server can store the full url or the relative path in it.
-    local webdav_url_path = WebDavApi.trim_slashes(util.urlDecode(webdav_url:match("^https?://[^/]*(.*)$") or webdav_url))
 
     local sink = {}
     local data = [[<?xml version="1.0"?><a:propfind xmlns:a="DAV:"><a:prop><a:resourcetype/><a:getcontentlength/><a:getlastmodified/></a:prop></a:propfind>]]
@@ -125,7 +122,7 @@ function WebDavApi.listFolder(address, user, pass, folder_path, include_folders)
             end
         elseif item:find("<[^:]*:collection[^<]*/>") then
             if include_folders then
-                local is_not_current_dir = WebDavApi.trim_slashes(item_fullpath) ~= webdav_url_path
+                local is_not_current_dir = WebDavApi.trim_slashes(item_fullpath) ~= path
                 if is_not_current_dir then
                     table.insert(item_list, {
                         is_folder = true,
@@ -175,12 +172,11 @@ function WebDavApi.uploadFile(file_url, user, pass, local_path, etag)
         },
     })
     socketutil:reset_timeout()
-    if type(code) == "number" and code >= 200 and code <= 299 then
-        code = 200
-    else
+    local ok = type(code) == "number" and code >= 200 and code <= 299
+    if not ok then
         logger.warn("WebDavApi: cannot upload file:", status or code)
     end
-    return code
+    return ok
 end
 
 function WebDavApi.deleteFile(file_url, user, pass)
@@ -192,10 +188,11 @@ function WebDavApi.deleteFile(file_url, user, pass)
         password = pass,
     })
     socketutil:reset_timeout()
-    if type(code) == "number" and code >= 200 and code <= 299 then
-        return true
+    local ok = type(code) == "number" and code >= 200 and code <= 299
+    if not ok then
+        logger.warn("WebDavApi: cannot delete file:", status or code)
     end
-    logger.warn("WebDavApi: cannot delete file:", status or code)
+    return ok
 end
 
 function WebDavApi.createFolder(folder_url, user, pass)
@@ -207,46 +204,40 @@ function WebDavApi.createFolder(folder_url, user, pass)
         password = pass,
     })
     socketutil:reset_timeout()
-    if type(code) == "number" and code >= 200 and code <= 299 then
-        return true
+    local ok = type(code) == "number" and code >= 200 and code <= 299
+    if not ok then
+        logger.warn("WebDavApi: cannot create folder:", status or code)
     end
-    logger.warn("WebDavApi: cannot create folder:", status or code)
+    return ok
 end
 
 -- WebDav
 
-function WebDav.run(caller_callback)
-    if NetworkMgr:willRerunWhenConnected(function() WebDav.run(caller_callback) end) then
+function WebDav.run(url, run_callback, include_folders)
+    local base = WebDav.base
+    if NetworkMgr:willRerunWhenConnected(function() WebDav.run(url, run_callback, include_folders) end) then
         return
     end
-    return caller_callback()
-end
-
-function WebDav.listFolder(url, include_folders)
-    local base = WebDav.base
-    -- list or nil
-    return WebDavApi.listFolder(base.address, base.username, base.password, url, include_folders)
+    return run_callback(WebDavApi.listFolder(base.address, base.username, base.password, url, include_folders))
 end
 
 function WebDav.downloadFile(url, local_path, progress_callback)
     local base = WebDav.base
     local path = WebDavApi.getJoinedPath(base.address, url)
-    -- code, etag
-    return WebDavApi.downloadFile(path, base.username, base.password, local_path, progress_callback)
+    local code = WebDavApi.downloadFile(path, base.username, base.password, local_path, progress_callback)
+    return code == 200
 end
 
-function WebDav.uploadFile(url, local_path, etag)
+function WebDav.uploadFile(url, local_path)
     local base = WebDav.base
     local path = WebDavApi.getJoinedPath(base.address, url)
     path = WebDavApi.getJoinedPath(path, ffiUtil.basename(local_path))
-    -- code
-    return WebDavApi.uploadFile(path, base.username, base.password, local_path, etag)
+    return WebDavApi.uploadFile(path, base.username, base.password, local_path)
 end
 
 function WebDav.deleteFile(url)
     local base = WebDav.base
     local path = WebDavApi.getJoinedPath(base.address, url)
-    -- ok
     return WebDavApi.deleteFile(path, base.username, base.password)
 end
 
@@ -254,7 +245,6 @@ function WebDav.createFolder(url, folder_name)
     local base = WebDav.base
     local path = WebDavApi.getJoinedPath(base.address, url)
     path = WebDavApi.getJoinedPath(path, folder_name)
-    -- ok
     return WebDavApi.createFolder(path, base.username, base.password)
 end
 
@@ -265,11 +255,11 @@ The start folder is appended to the server path.]])
     local item = server_idx and WebDav.base.servers[server_idx] or { type = WebDav.type }
     local settings_dialog
     settings_dialog = MultiInputDialog:new{
-        title = _("WebDAV server settings"),
+        title = _("WebDAV cloud storage"),
         fields = {
             {
                 text = item.name,
-                hint = _("Name"),
+                hint = _("Cloud storage displayed name"),
             },
             {
                 text = item.address,

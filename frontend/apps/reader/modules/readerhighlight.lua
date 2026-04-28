@@ -290,7 +290,9 @@ function ReaderHighlight:registerKeyEvents()
         self.key_events.QuickLeftHighlightIndicator  = { { modifier, "Left" },  event = "MoveHighlightIndicator", args = {-1, 0, QUICK_INDICATOR_MOVE} }
         self.key_events.QuickRightHighlightIndicator = { { modifier, "Right" }, event = "MoveHighlightIndicator", args = {1, 0, QUICK_INDICATOR_MOVE} }
         self.key_events.HighlightModifierPress       = { { modifier, "Press" } }
-        -- onStartHighlightIndicator (H) is handled by hotkeys.koplugin
+        if Device:hasKeyboard() then
+            self.key_events.StartHighlightIndicator  = { { "H" } }
+        end
     end
 end
 
@@ -1810,13 +1812,6 @@ function ReaderHighlight:onHold(arg, ges)
         end
         return true
     end
-    -- It has happened it failed because the text range was detected on the
-    -- previous page and highlighted by crengine, but no word was returned
-    -- (because the boxes were not on the current page).
-    -- Be sure we clear any such selection
-    self.ui.document:clearSelection()
-    -- And that we don't get stuck in a hold state
-    self.hold_pos = nil
     return false
 end
 

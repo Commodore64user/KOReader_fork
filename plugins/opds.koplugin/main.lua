@@ -12,13 +12,10 @@ local T = require("ffi/util").template
 
 local OPDS = WidgetContainer:extend{
     name = "opds",
-    settings_file = DataStorage:getSettingsDir() .. "/opds.lua",
+    opds_settings_file = DataStorage:getSettingsDir() .. "/opds.lua",
     settings = nil,
-    opds_settings = nil,
     servers = nil,
     downloads = nil,
-    pending_syncs = nil,
-    updated = nil,
     default_servers = {
         {
             title = "Project Gutenberg",
@@ -48,20 +45,16 @@ local OPDS = WidgetContainer:extend{
 }
 
 function OPDS:init()
-    self:onDispatcherRegisterActions()
-    self.ui.menu:registerToMainMenu(self)
-end
-
-function OPDS:loadSettings()
-    if self.settings then return end
-    self.settings = LuaSettings:open(self.settings_file)
-    if next(self.settings.data) == nil then
+    self.opds_settings = LuaSettings:open(self.opds_settings_file)
+    if next(self.opds_settings.data) == nil then
         self.updated = true -- first run, force flush
     end
-    self.opds_settings = self.settings:readSetting("settings", {})
-    self.servers = self.settings:readSetting("servers", self.default_servers)
-    self.downloads = self.settings:readSetting("downloads", {})
-    self.pending_syncs = self.settings:readSetting("pending_syncs", {})
+    self.servers = self.opds_settings:readSetting("servers", self.default_servers)
+    self.downloads = self.opds_settings:readSetting("downloads", {})
+    self.settings = self.opds_settings:readSetting("settings", {})
+    self.pending_syncs = self.opds_settings:readSetting("pending_syncs", {})
+    self:onDispatcherRegisterActions()
+    self.ui.menu:registerToMainMenu(self)
 end
 
 function OPDS:onDispatcherRegisterActions()
@@ -82,11 +75,10 @@ function OPDS:addToMainMenu(menu_items)
 end
 
 function OPDS:onShowOPDSCatalog()
-    self:loadSettings()
     self.opds_browser = OPDSBrowser:new{
-        settings = self.opds_settings,
         servers = self.servers,
         downloads = self.downloads,
+        settings = self.settings,
         pending_syncs = self.pending_syncs,
         title = _("OPDS catalog"),
         is_popout = false,
@@ -137,7 +129,7 @@ end
 
 function OPDS:onFlushSettings()
     if self.updated then
-        self.settings:flush()
+        self.opds_settings:flush()
         self.updated = nil
     end
 end

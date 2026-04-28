@@ -3,7 +3,11 @@ local LuaData = require("luadata")
 
 local Migration = {}
 
-function Migration.convertAction(location, ges, action)
+local custom_multiswipes_path = DataStorage:getSettingsDir().."/multiswipes.lua"
+local custom_multiswipes = LuaData:open(custom_multiswipes_path, "MultiSwipes")
+local custom_multiswipes_table = custom_multiswipes:readSetting("multiswipes")
+
+function Migration:convertAction(location, ges, action)
     local result
     if action == "ignore" then
         result = nil
@@ -60,7 +64,7 @@ function Migration.convertAction(location, ges, action)
     elseif action == "skim" then
         result = {skim = true,}
     elseif action == "back" then
-        result = {back = true,}
+        result = { back = true,}
     elseif action == "previous_location" then
         result = {previous_location = true,}
     elseif action == "latest_bookmark" then
@@ -173,27 +177,25 @@ function Migration.convertAction(location, ges, action)
     location[ges] = result
 end
 
-function Migration.migrateGestures(caller)
+function Migration:migrateGestures(caller)
     for _, ges_mode in ipairs({"gesture_fm", "gesture_reader"}) do
         local ges_mode_setting = G_reader_settings:readSetting(ges_mode)
         if ges_mode_setting then
             for k, v in pairs(ges_mode_setting) do
-                Migration.convertAction(caller.settings.data[ges_mode], k, v)
+                Migration:convertAction(caller.settings_data.data[ges_mode], k, v)
             end
+            caller.settings_data:flush()
             G_reader_settings:delSetting(ges_mode)
         end
     end
-
-    local custom_multiswipes_path = DataStorage:getSettingsDir().."/multiswipes.lua"
-    local custom_multiswipes = LuaData:open(custom_multiswipes_path, "MultiSwipes")
-    local custom_multiswipes_table = custom_multiswipes:readSetting("multiswipes")
+    -- custom multiswipes
     if custom_multiswipes_table then
         for k, v in pairs(custom_multiswipes_table) do
             local multiswipe = "multiswipe_" .. caller:safeMultiswipeName(v)
-            caller.settings.data.custom_multiswipes[multiswipe] = true
+            caller.settings_data.data.custom_multiswipes[multiswipe] = true
         end
     end
-
+    caller.settings_data:flush()
     G_reader_settings:makeTrue("gestures_migrated")
 end
 
